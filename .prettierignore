@@ -1,0 +1,8 @@
+dist
+.perf-dist
+node_modules
+pnpm-lock.yaml
+**/*.json
+docs/perf
+apps/web/public
+apps/web/scripts/art

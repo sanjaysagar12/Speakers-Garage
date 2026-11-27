@@ -15,3 +15,7 @@ perf-results
 .DS_Store
 coverage
 .vite
+.turbo
+.env
+!.env.example
+**/dist

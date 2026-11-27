@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import { defineConfig, type Plugin } from 'vite';
+import { defaultClientConditions, defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
 
@@ -52,5 +52,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 800,
     rolldownOptions: { output: { codeSplitting: vendorGroups } },
   },
+  // workspace packages expose their TypeScript sources under the "source" condition: no pre-build needed in dev
+  resolve: { conditions: ['source', ...defaultClientConditions] },
   server: { host: true },
 });
