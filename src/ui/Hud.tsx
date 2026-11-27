@@ -4,6 +4,7 @@ import { Minimap } from './Minimap';
 import { Joystick } from './Joystick';
 import { Dialog } from './Dialog';
 import { Wardrobe } from './Wardrobe';
+import { QualitySettings } from './QualitySettings';
 import { Suspense, lazy } from 'react';
 
 const clockLabel = (t: number): string => {
@@ -13,6 +14,8 @@ const clockLabel = (t: number): string => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
 
+/** F2 stats overlay: dev builds only */
+const StatsOverlay = import.meta.env.DEV ? lazy(() => import('./StatsOverlay').then((m) => ({ default: m.StatsOverlay }))) : null;
 /** F3 panel: dev builds only */
 const DebugPanel = import.meta.env.DEV ? lazy(() => import('./DebugPanel').then((m) => ({ default: m.DebugPanel }))) : null;
 
@@ -41,6 +44,9 @@ export function Hud() {
           onClick={() => setUi({ dayNight: !ui.dayNight })}
         >
           {ui.dayNight ? (ui.timeOfDay > 0.84 || ui.timeOfDay < 0.17 ? '🌙' : '🌤') : '☀️'}
+        </button>
+        <button className={btn} aria-label="Settings" title="Quality and frame rate" onClick={() => setUi({ settingsOpen: !ui.settingsOpen })}>
+          ⚙️
         </button>
         <button className={btn} aria-label="Leave world" title="Back to start" onClick={leave}>
           ⏏
@@ -105,6 +111,12 @@ export function Hud() {
       {DebugPanel && ui.debug && (
         <Suspense fallback={null}>
           <DebugPanel />
+        </Suspense>
+      )}
+      <QualitySettings />
+      {StatsOverlay && (
+        <Suspense fallback={null}>
+          <StatsOverlay />
         </Suspense>
       )}
       <div className="pointer-events-auto">

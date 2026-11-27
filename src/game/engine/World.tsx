@@ -10,6 +10,10 @@ import { Sun } from './Sun';
 import { WorldClock, Gulls, Crabs, Drift, Smoke } from './Ambient';
 import { Hotspots } from './Hotspots';
 import { PostFX } from './PostFX';
+import { Governor } from '../perf/Governor';
+import { frameStats } from '../perf/stats';
+import { FrameDriver } from '../perf/FrameDriver';
+import { gameStore } from '../../store/gameStore';
 import { deckAt, standHeight } from '../maps/deck';
 import { useGameStore } from '../../store/useGameStore';
 import { RemotePlayers } from './Remote';
@@ -49,7 +53,6 @@ function Audio() {
   return null;
 }
 
-const frameTotals = { calls: 0, triangles: 0 };
 // F3 overlay: dev builds only, loaded on demand
 const DebugOverlay = import.meta.env.DEV ? lazy(() => import('./DebugOverlay').then((m) => ({ default: m.DebugOverlay }))) : null;
 
@@ -60,7 +63,7 @@ export function World({ map, quality }: { map: GameMap; quality: Quality }) {
   const debug = useGameStore((s) => s.ui.debug);
   const runtime = useMemo(() => {
     const r = new WorldRuntime(map);
-    r.fx = new FxEmitter();
+    r.fx = new FxEmitter(QUALITY[gameStore.getState().ui.quality].particles);
     return r;
   }, [map]);
   const sunTarget = useMemo(() => ({ current: runtime.camera.focus }), [runtime]);
@@ -77,6 +80,8 @@ export function World({ map, quality }: { map: GameMap; quality: Quality }) {
   useEffect(() => () => runtime.fx?.dispose(), [runtime]);
 
   useEffect(() => {
+    G.uGradeBaked.value = q.gradeInShader ? 1 : 0;
+    G.uCloud.value.z = q.cloudShadows ? 0.32 : 0;
     G.uGrain.value = q.grain;
     G.uSparkle.value = q.sparkles;
   }, [q]);
@@ -91,8 +96,11 @@ export function World({ map, quality }: { map: GameMap; quality: Quality }) {
   }, [gl]);
   useFrame(() => {
     if (!(import.meta.env.DEV || import.meta.env.VITE_PERF_HOOKS) || gl.info.autoReset) return;
-    frameTotals.calls = gl.info.render.calls;
-    frameTotals.triangles = gl.info.render.triangles;
+    frameStats.calls = gl.info.render.calls;
+    frameStats.triangles = gl.info.render.triangles;
+    frameStats.geometries = gl.info.memory.geometries;
+    frameStats.textures = gl.info.memory.textures;
+    frameStats.programs = gl.info.programs?.length ?? 0;
     gl.info.reset();
   }, -1);
 
@@ -100,7 +108,7 @@ export function World({ map, quality }: { map: GameMap; quality: Quality }) {
   useEffect(() => {
     if (!(import.meta.env.DEV || import.meta.env.VITE_PERF_HOOKS)) return;
     const api = {
-      renderInfo: () => ({ ...frameTotals, geometries: gl.info.memory.geometries, textures: gl.info.memory.textures, programs: gl.info.programs?.length ?? 0 }),
+      renderInfo: () => ({ ...frameStats }),
       teleport: (x: number, z: number, facing: number) => {
         runtime.player.pos.set(x, standHeight(runtime.map, x, z), z);
         runtime.player.vel.set(0, 0, 0);
@@ -128,13 +136,15 @@ export function World({ map, quality }: { map: GameMap; quality: Quality }) {
       <Props map={map} density={q.propDensity} />
       <Player />
       <CameraRig />
+      <Governor />
+      <FrameDriver />
       <Sun target={sunTarget} extent={q.shadowExtent} mapSize={q.shadowMapSize} />
       <Fx />
       <Hotspots />
-      <Gulls count={Math.round(map.ambient.gulls * (quality === 'low' ? 0.5 : 1))} />
-      <Crabs count={map.ambient.crabs} />
-      <Drift kind={map.ambient.drift} count={quality === 'low' ? 30 : 90} />
-      {map.ambient.fire && <Smoke at={map.ambient.fire} />}
+      {q.gulls > 0 && <Gulls count={Math.min(map.ambient.gulls, q.gulls)} />}
+      {q.crabs > 0 && <Crabs count={Math.min(map.ambient.crabs, q.crabs)} animDistance={q.animDistance} />}
+      {q.drift > 0 && <Drift kind={map.ambient.drift} count={q.drift} />}
+      {map.ambient.fire && q.smoke && <Smoke at={map.ambient.fire} />}
       <RemotePlayers />
       <Audio />
       {DebugOverlay && debug && (

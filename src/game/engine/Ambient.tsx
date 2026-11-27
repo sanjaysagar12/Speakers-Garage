@@ -136,7 +136,7 @@ interface Crab {
 }
 
 /** Crabs scuttling sideways along the wet sand, pausing now and then. Uses the shore distance field. */
-export function Crabs({ count }: { count: number }) {
+export function Crabs({ count, animDistance = 1e9 }: { count: number; animDistance?: number }) {
   const world = useWorld();
   const map = world.map;
   const crabs = useMemo<Crab[]>(() => {
@@ -168,6 +168,8 @@ export function Crabs({ count }: { count: number }) {
     const t = G.uTime.value;
     const P = world.player.pos;
     for (const c of crabs) {
+      // far crabs are out of view: skip their simulation
+      if (Math.abs(P.x - c.x) + Math.abs(P.z - c.z) > animDistance) continue;
       const e = 0.4;
       const gx = (sd(c.x + e, c.z) - sd(c.x - e, c.z)) / (2 * e);
       const gz = (sd(c.x, c.z + e) - sd(c.x, c.z - e)) / (2 * e);

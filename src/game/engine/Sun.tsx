@@ -32,7 +32,9 @@ export function Sun({ target, extent, mapSize }: { target: MutableRefObject<Vect
     cam.near = 1;
     cam.far = 140;
     cam.updateProjectionMatrix();
-    light.shadow.mapSize.set(mapSize, mapSize);
+    // tier 'shadows off': no caster pass at all (three recompiles lit materials without shadow sampling)
+    light.castShadow = mapSize > 0;
+    light.shadow.mapSize.set(Math.max(mapSize, 1), Math.max(mapSize, 1));
     if (light.shadow.map) {
       light.shadow.map.dispose();
       light.shadow.map = null;
@@ -46,7 +48,7 @@ export function Sun({ target, extent, mapSize }: { target: MutableRefObject<Vect
     dir.copy(G.uSunDir.value).negate();
     right.crossVectors(dir, up).normalize();
     upv.crossVectors(right, dir).normalize();
-    const texel = (2 * extent) / mapSize;
+    const texel = (2 * Math.max(extent, 1)) / Math.max(mapSize, 1);
     const u = t.dot(right);
     const v = t.dot(upv);
     snapped

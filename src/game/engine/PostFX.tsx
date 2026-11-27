@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, FXAA, Noise, Vignette } from '@react-three/postprocessing';
 import { BlendFunction, Effect } from 'postprocessing';
 import { Uniform } from 'three';
 import { G } from '../materials/globals';
@@ -43,18 +43,31 @@ class StippleGradeEffect extends Effect {
   }
 }
 
+/**
+ * Post-processing by tier. postprocessing merges the grade, grain and vignette into ONE effect pass (bloom
+ * adds its own half-resolution mip chain). 'fxaa' is a single cheap AA pass; 'none' skips the composer
+ * entirely and the warm grade is applied inside the world shaders instead (G.uGradeBaked).
+ */
 export function PostFX({ q }: { q: QualityProfile }) {
   const grade = useMemo(() => new StippleGradeEffect(), []);
-  useEffect(() => () => grade.dispose(), [grade]);
+  // Effect has no dispose() in this postprocessing version: calling it threw and aborted the rest of the
+  // world's unmount (a leak on every re-enter). Free the effect's material resources if present.
+  useEffect(() => () => (grade as unknown as { dispose?: () => void }).dispose?.(), [grade]);
   useFrame(() => {
-    grade.uniforms.get('uStipple')!.value = q.stipple ? 1 : 0;
+    grade.uniforms.get('uStipple')!.value = q.grain > 0 ? 1 : 0;
     grade.uniforms.get('uWarm')!.value = G.uWarm.value;
   });
-  if (!q.post) return null;
+  if (q.post === 'none') return null;
+  if (q.post === 'fxaa')
+    return (
+      <EffectComposer multisampling={0} enableNormalPass={false}>
+        <FXAA />
+      </EffectComposer>
+    );
   return (
     <EffectComposer multisampling={4} enableNormalPass={false}>
-      {/* only HDR whites (foam is slightly >1, sparkles and bulbs far above) bloom */}
-      <Bloom intensity={q.bloom ? 0.45 : 0} luminanceThreshold={1.0} luminanceSmoothing={0.15} mipmapBlur />
+      {/* only HDR whites (foam is slightly >1, sparkles and bulbs far above) bloom; half-resolution mips */}
+      <Bloom intensity={0.45} luminanceThreshold={1.0} luminanceSmoothing={0.15} mipmapBlur resolutionScale={0.5} />
       <primitive object={grade} dispose={null} />
       <Noise premultiply opacity={0.32 * q.grain} blendFunction={BlendFunction.SOFT_LIGHT} />
       <Vignette offset={0.32} darkness={0.42} />

@@ -198,7 +198,7 @@ void main() {
   float shadeAmt = 1.0 - min(sh, mix(0.35, 1.0, full) * mid);
   col *= 1.0 - 0.09 * uGrain * uGrainMat * shadeAmt * stipple(0.24);
   col *= uSunColor;
-  gl_FragColor = vec4(col, uOpacity);
+  gl_FragColor = vec4(bakedGrade(col), uOpacity);
   #endif
   #include <tonemapping_fragment>
   #include <colorspace_fragment>

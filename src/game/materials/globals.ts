@@ -21,6 +21,8 @@ export const G = {
   uSparkle: { value: 1 },
   /** 0 at midday, 1 at sunset: used by water and foam colour grading */
   uWarm: { value: 0 },
+  /** 1 when there is no post pass: the warm colour grade is applied inside the world shaders instead */
+  uGradeBaked: { value: 0 },
 };
 
 export type GlobalUniforms = typeof G;

@@ -10,6 +10,7 @@ uniform vec4 uCloud;
 uniform float uGrain;
 uniform float uSparkle;
 uniform float uWarm;
+uniform float uGradeBaked;
 `;
 
 export const NOISE_GLSL = /* glsl */ `
@@ -70,12 +71,22 @@ vec3 shadeOf(vec3 c) {
   return mix(cool, sat, smoothstep(0.08, 0.3, h.y));
 }
 float cloudShadow(vec2 xz) {
+  if (uCloud.z <= 0.0) return 1.0;
   float n = fbm((xz + uCloud.xy) * uCloud.w);
   return 1.0 - uCloud.z * smoothstep(0.6, 0.64, n);
 }
+/** The post pass's warm grade, for tiers without post-processing (same maths, applied in the material). */
+vec3 bakedGrade(vec3 c) {
+  if (uGradeBaked < 0.5) return c;
+  c *= vec3(1.025, 1.0, 0.955);
+  float g = dot(c, vec3(0.3333));
+  c = mix(vec3(g), c, 1.07);
+  return mix(c, c * vec3(1.1, 0.94, 0.82), uWarm * 0.45);
+}
 /** screen-space stipple: 1 where a darker speck should go */
 float stipple(float density) {
-  float g = hash12(floor(gl_FragCoord.xy / 1.5) + floor(uTime * 0.0));
+  if (uGrain <= 0.0) return 0.0;
+  float g = hash12(floor(gl_FragCoord.xy / 1.5));
   return step(1.0 - density, g);
 }
 `;

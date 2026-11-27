@@ -108,7 +108,7 @@ export class FxEmitter {
   private readonly cFoam = new Color(PAL.foam);
   private readonly cSand = new Color(PAL.sandBand);
 
-  constructor() {
+  constructor(maxParticles: number = GAME_CONFIG.effects.maxParticles) {
     const fp = new CircleGeometry(0.07, 10);
     fp.rotateX(-Math.PI / 2);
     fp.scale(1, 1, 1.75);
@@ -116,7 +116,7 @@ export class FxEmitter {
     const ring = new RingGeometry(0.85, 1, 28);
     ring.rotateX(-Math.PI / 2);
     this.ripples = new Pool(ring, GAME_CONFIG.effects.maxRipples, true);
-    this.parts = new Pool(new IcosahedronGeometry(1, 0), GAME_CONFIG.effects.maxParticles, false);
+    this.parts = new Pool(new IcosahedronGeometry(1, 0), maxParticles, false);
     this.printState = Array.from({ length: this.prints.mesh.count }, () => ({ age: 1, life: 0, alpha: 0 }));
     this.rippleState = Array.from({ length: this.ripples.mesh.count }, () => ({ age: 1, life: 0, size: 1, x: 0, y: 0, z: 0 }));
     this.partState = Array.from({ length: this.parts.mesh.count }, () => ({ age: 1, life: 0, pos: new Vector3(), vel: new Vector3(), size: 0, grav: 0 }));

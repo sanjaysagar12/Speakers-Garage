@@ -111,20 +111,33 @@ void main() {
   water = mix(water, cTeal, stipBand(wd + jitter, 1.6, 2.6, cell));
   water = mix(water, cDeep, stipBand(wd + jitter * 1.5, 8.5, 4.5, cell + 17.0));
   water = mix(water, cDeepest, stipBand(wd + jitter * 2.0, 20.0, 8.0, cell + 31.0));
+  #if WATER_DETAIL >= 2
   // ripple lines drifting along the shore
   vec2 sp = vec2(s * 0.08 + t * 0.012, wd * 0.22 + vnoise(vec2(s * 0.05, wd * 0.1)) * 1.4);
   float rl = abs(fract(sp.y * 1.3 + vnoise(sp * 1.7) * 0.8) - 0.5);
   float rip = (1.0 - aastep(0.035, rl)) * step(0.62, vnoise(vec2(s * 0.18, wd * 0.12) + t * 0.02)) * smoothstep(3.0, 6.0, wd);
   water = mix(water, mix(water, cFoam, 0.5), rip);
+  #endif
 
   // ---- foam
   float fw = 0.9 + 0.7 * vnoise(vec2(s * 0.6, t * 0.3));
+  #if WATER_DETAIL >= 2
   vec2 vor = voronoi(xz * 0.9 + vec2(t * 0.05, 0.0));
-  float l2 = -7.0 + 1.1 * sin(ph * 0.8 + 1.7) + (vnoise(vec2(s * 0.3, t * 0.2)) - 0.5) * 1.6;
-  float line2 = (1.0 - aastep(0.16, abs(d - l2))) * step(0.38, vnoise(vec2(s * 0.35, t * 0.15) + 5.0));
   float lace = 1.0 - aastep(0.06 + 0.06 * smoothstep(edge - fw - 3.5, edge - fw, d), vor.y - vor.x);
   float laceZone = smoothstep(edge - fw - 4.0, edge - fw - 0.2, d);
+  #else
+  vec2 vor = vec2(0.4, 1.0);
+  float lace = 0.0;
+  float laceZone = 0.0;
+  #endif
+  #if WATER_DETAIL >= 1
+  float l2 = -7.0 + 1.1 * sin(ph * 0.8 + 1.7) + (vnoise(vec2(s * 0.3, t * 0.2)) - 0.5) * 1.6;
+  float line2 = (1.0 - aastep(0.16, abs(d - l2))) * step(0.38, vnoise(vec2(s * 0.35, t * 0.15) + 5.0));
   float frag = aastep(0.82, vnoise(xz * 1.4 + vec2(t * 0.06, -t * 0.03))) * smoothstep(-9.0, -3.0, d) * (1.0 - smoothstep(-2.0, 0.0, d - edge + fw));
+  #else
+  float line2 = 0.0;
+  float frag = 0.0;
+  #endif
   float inner = edge - fw + (vor.x - 0.4) * 0.35;
   float band = aastep(inner, d) * (1.0 - aastep(edge, d));
   float foam = max(max(line2, band), max(lace * laceZone, frag));
@@ -134,6 +147,7 @@ void main() {
   col = mix(col, cFoam * 1.06, foam * isWater);
 
   // ---- sparkles: 4-point stars that twinkle on open water
+  #if WATER_DETAIL >= 1
   vec2 sc = xz / 2.4;
   vec2 ci = floor(sc);
   vec2 cf = fract(sc) - 0.5 - (hash22(ci) - 0.5) * 0.6;
@@ -143,6 +157,9 @@ void main() {
   float L = 0.42 * tw + 1e-3;
   float star = max(1.0 - aastep(0.024 * (1.0 - q.x / L), q.y), 1.0 - aastep(0.024 * (1.0 - q.y / L), q.x));
   star *= step(q.x, L) * step(q.y, L) * step(0.02, tw);
+  #else
+  float star = 0.0;
+  #endif
 
   // ---- shadows: a darker tone of whatever they fall on
   float sh = getShadowMask() * cloudShadow(xz);
@@ -153,13 +170,13 @@ void main() {
   col *= 1.0 - 0.08 * uGrain * (1.0 - sh) * stipple(0.3);
   col *= uSunColor;
   col += vec3(2.4) * star * sh * mix(vec3(1.0), uSunColor, 0.5);
-  gl_FragColor = vec4(col, 1.0);
+  gl_FragColor = vec4(bakedGrade(col), 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }
 `;
 
-export function makeBeachGroundMaterial(field: DataTexture, rect: [number, number, number, number]): ShaderMaterial {
+export function makeBeachGroundMaterial(field: DataTexture, rect: [number, number, number, number], waterDetail: 0 | 1 | 2 = 2): ShaderMaterial {
   const c = (h: string) => ({ value: new Color(h) });
   return new ShaderMaterial({
     name: 'beach-ground',
@@ -182,6 +199,7 @@ export function makeBeachGroundMaterial(field: DataTexture, rect: [number, numbe
     },
     vertexShader: VERT,
     fragmentShader: FRAG,
+    defines: { WATER_DETAIL: waterDetail },
     lights: true,
   });
 }

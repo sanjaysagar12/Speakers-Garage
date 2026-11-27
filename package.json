@@ -16,7 +16,8 @@
     "size": "node scripts/size-report.mjs dist",
     "perf": "node scripts/perf.mjs",
     "pier-check": "node scripts/pier-check.mjs",
-    "analyze": "ANALYZE=1 vite build"
+    "analyze": "ANALYZE=1 vite build",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",

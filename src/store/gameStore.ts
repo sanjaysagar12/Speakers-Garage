@@ -2,7 +2,7 @@ import { createStore } from 'zustand/vanilla';
 import type { AvatarConfig, DialogContent, NearbyInteraction } from '../types';
 import { DEFAULT_AVATAR, sanitizeAvatar } from '../game/models/character/catalog';
 import { DEFAULT_MAP, MAP_REGISTRY } from '../game/maps/registry';
-import type { Quality } from '../game/config';
+import { QUALITY_ORDER, type Quality, type QualityMode } from '../game/config';
 
 
 export type Phase = 'landing' | 'playing';
@@ -23,7 +23,13 @@ export interface GameState {
     dayNight: boolean;
     /** 0..1 cycle phase, mirrored from the world for the HUD */
     timeOfDay: number;
+    /** effective rendering tier (set by detection / the governor, or the manual choice) */
     quality: Quality;
+    /** what the player picked in settings: 'auto' or a fixed tier (persisted) */
+    qualityMode: QualityMode;
+    /** frame-rate cap for battery saving (persisted) */
+    fpsCap: 30 | 60;
+    settingsOpen: boolean;
     /** F3 debug overlay */
     debug: boolean;
   };
@@ -49,7 +55,8 @@ interface Saved {
   name: string;
   avatar: AvatarConfig;
   mapId: string;
-  quality: Quality;
+  qualityMode: QualityMode;
+  fpsCap: 30 | 60;
 }
 
 const detectTouch = (): boolean => {
@@ -61,25 +68,27 @@ const detectTouch = (): boolean => {
 };
 
 function loadProfile(): Saved {
-  const fallback: Saved = { name: '', avatar: { ...DEFAULT_AVATAR }, mapId: DEFAULT_MAP, quality: detectTouch() ? 'low' : 'med' };
+  const fallback: Saved = { name: '', avatar: { ...DEFAULT_AVATAR }, mapId: DEFAULT_MAP, qualityMode: 'auto', fpsCap: 60 };
   try {
     const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_KEY);
     if (!raw) return fallback;
-    const p = JSON.parse(raw) as Partial<{ name: string; avatar: Record<string, unknown>; mapId: string; quality: string }>;
+    // older saves stored an automatic default under `quality` (there was no setting); they start on auto
+    const p = JSON.parse(raw) as Partial<{ name: string; avatar: Record<string, unknown>; mapId: string; qualityMode: string; fpsCap: number }>;
     return {
       name: typeof p.name === 'string' ? p.name.slice(0, 18) : '',
       avatar: sanitizeAvatar(p.avatar as Partial<AvatarConfig>),
       mapId: p.mapId && MAP_REGISTRY[p.mapId] ? p.mapId : DEFAULT_MAP,
-      quality: p.quality === 'low' || p.quality === 'med' || p.quality === 'high' ? p.quality : fallback.quality,
+      qualityMode: p.qualityMode === 'auto' || QUALITY_ORDER.includes(p.qualityMode as Quality) ? (p.qualityMode as QualityMode) : 'auto',
+      fpsCap: p.fpsCap === 30 ? 30 : 60,
     };
   } catch {
     return fallback;
   }
 }
 
-function persist(s: Pick<GameState, 'name' | 'avatar' | 'mapId'> & { quality: Quality }): void {
+function persist(s: Pick<GameState, 'name' | 'avatar' | 'mapId'> & { qualityMode: QualityMode; fpsCap: 30 | 60 }): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ name: s.name, avatar: s.avatar, mapId: s.mapId, quality: s.quality }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ name: s.name, avatar: s.avatar, mapId: s.mapId, qualityMode: s.qualityMode, fpsCap: s.fpsCap }));
   } catch {
     /* storage unavailable */
   }
@@ -90,7 +99,7 @@ const initial = loadProfile();
 export const gameStore = createStore<GameState>((set, get) => {
   const save = () => {
     const s = get();
-    persist({ name: s.name, avatar: s.avatar, mapId: s.mapId, quality: s.ui.quality });
+    persist({ name: s.name, avatar: s.avatar, mapId: s.mapId, qualityMode: s.ui.qualityMode, fpsCap: s.ui.fpsCap });
   };
   return {
     phase: 'landing',
@@ -98,7 +107,7 @@ export const gameStore = createStore<GameState>((set, get) => {
     avatar: initial.avatar,
     mapId: initial.mapId,
     position: { x: 0, y: 0, facing: 0, yaw: 0 },
-    ui: { hintOpen: true, muted: false, isTouch: detectTouch(), wardrobeOpen: false, dayNight: false, timeOfDay: 0, quality: initial.quality, debug: false },
+    ui: { hintOpen: true, muted: false, isTouch: detectTouch(), wardrobeOpen: false, dayNight: false, timeOfDay: 0, quality: initial.qualityMode === 'auto' ? (detectTouch() ? 'low' : 'med') : initial.qualityMode, qualityMode: initial.qualityMode, fpsCap: initial.fpsCap, settingsOpen: false, debug: false },
     nearby: null,
     dialog: null,
     setName: (name) => set({ name: name.slice(0, 18) }),
@@ -130,7 +139,7 @@ export const gameStore = createStore<GameState>((set, get) => {
     closeDialog: () => set({ dialog: null }),
     setUi: (patch) => {
       set((s) => ({ ui: { ...s.ui, ...patch } }));
-      if (patch.quality) save();
+      if (patch.qualityMode || patch.fpsCap) save();
     },
   };
 });
