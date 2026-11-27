@@ -25,6 +25,8 @@ export function defaultWebDist(): string {
 
 export function resolveWebDist(env: Env): string | null {
   if (env.SERVE_WEB === 'off') return null;
+  // on Vercel the site is its own service (vercel.json): this one serves only the API and the socket
+  if (env.SERVE_WEB === 'auto' && process.env.VERCEL) return null;
   const dir = env.WEB_DIST_PATH ? path.resolve(env.WEB_DIST_PATH) : defaultWebDist();
   const ok = existsSync(path.join(dir, 'index.html')) && statSync(dir).isDirectory();
   if (ok) return dir;
