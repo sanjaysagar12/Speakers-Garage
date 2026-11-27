@@ -1,7 +1,7 @@
 import { createStore } from 'zustand/vanilla';
 import type { AvatarConfig, DialogContent, NearbyInteraction } from '../types';
 import { DEFAULT_AVATAR, sanitizeAvatar } from '../game/models/character/catalog';
-import { DEFAULT_MAP, MAP_REGISTRY } from '../game/maps/registry';
+import { DEFAULT_MAP, isMapId } from '../game/maps/ids';
 import { QUALITY_ORDER, type Quality, type QualityMode } from '../game/config';
 
 
@@ -77,7 +77,7 @@ function loadProfile(): Saved {
     return {
       name: typeof p.name === 'string' ? p.name.slice(0, 18) : '',
       avatar: sanitizeAvatar(p.avatar as Partial<AvatarConfig>),
-      mapId: p.mapId && MAP_REGISTRY[p.mapId] ? p.mapId : DEFAULT_MAP,
+      mapId: isMapId(p.mapId) ? p.mapId : DEFAULT_MAP,
       qualityMode: p.qualityMode === 'auto' || QUALITY_ORDER.includes(p.qualityMode as Quality) ? (p.qualityMode as QualityMode) : 'auto',
       fpsCap: p.fpsCap === 30 ? 30 : 60,
     };
@@ -120,7 +120,7 @@ export const gameStore = createStore<GameState>((set, get) => {
       save();
     },
     setMap: (id) => {
-      if (!MAP_REGISTRY[id]) return;
+      if (!isMapId(id)) return;
       set({ mapId: id, nearby: null, dialog: null });
       save();
     },

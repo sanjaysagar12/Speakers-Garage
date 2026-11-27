@@ -1,7 +1,7 @@
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { gameStore } from '../store/gameStore';
 import { useGameStore } from '../store/useGameStore';
-import { getMap } from '../game/maps/registry';
+import { loadMap } from '../game/maps/registry';
 import type { GameMap } from '../game/maps/types';
 
 const SIZE = 180;
@@ -59,10 +59,17 @@ function raster(map: GameMap): HTMLCanvasElement {
 export const Minimap = memo(function Minimap() {
   const ref = useRef<HTMLCanvasElement>(null);
   const mapId = useGameStore((s) => s.mapId);
+  const [map, setMap] = useState<GameMap | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void loadMap(mapId).then((m) => alive && setMap(m));
+    return () => {
+      alive = false;
+    };
+  }, [mapId]);
   useEffect(() => {
     const canvas = ref.current;
-    if (!canvas) return;
-    const map = getMap(mapId);
+    if (!canvas || !map) return;
     const base = raster(map);
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.width = SIZE * dpr;
@@ -133,6 +140,6 @@ export const Minimap = memo(function Minimap() {
       unsub();
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [mapId]);
+  }, [map]);
   return <canvas ref={ref} aria-label="Minimap" className="block rounded-full" style={{ width: SIZE, height: SIZE }} />;
 });

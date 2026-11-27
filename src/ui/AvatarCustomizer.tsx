@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
+
+// three.js-backed parts load on demand so the landing page's first download stays small
+const AvatarPreview = lazy(() => import('./AvatarPreview').then((m) => ({ default: m.AvatarPreview })));
+const renderThumb: typeof import('../game/models/character/thumbs').renderThumb = (...a) => import('../game/models/character/thumbs').then((m) => m.renderThumb(...a));
 import { useGameStore } from '../store/useGameStore';
-import { AvatarPreview } from './AvatarPreview';
 import { AVATAR_SLOTS, CLOTH_COLOURS, HAIR_COLOURS, SKIN_TONES, SLOT_FIELDS } from '../game/models/character/catalog';
-import { renderThumb } from '../game/models/character/thumbs';
 import type { AvatarConfig, Slot } from '../types';
 
 const SLOTS: Array<{ id: Slot; label: string; icon: string }> = [
@@ -112,7 +114,9 @@ export function AvatarCustomizer({ compact = false }: { compact?: boolean }) {
     <div className={`flex flex-col gap-4 ${compact ? '' : 'sm:flex-row'}`}>
       <div className="flex shrink-0 flex-col items-center gap-2">
         <div className="rounded-3xl bg-gradient-to-b from-[#bfeee9] to-[#74DCD4] p-2 shadow-inner">
-          <AvatarPreview avatar={avatar} yaw={yaw} />
+          <Suspense fallback={<div className="flex h-[250px] w-[190px] items-center justify-center text-sm text-bark/50">Loading preview…</div>}>
+            <AvatarPreview avatar={avatar} yaw={yaw} />
+          </Suspense>
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={() => setYaw((y) => y + Math.PI / 2)} className="rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-bark shadow hover:bg-white">

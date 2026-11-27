@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { PCFShadowMap } from 'three';
 import { World } from './engine/World';
-import { getMap } from './maps/registry';
+import { loadMap } from './maps/registry';
 import { QUALITY } from './config';
 import { detectTier } from './perf/detect';
 import { gameStore } from '../store/gameStore';
 import { useGameStore } from '../store/useGameStore';
+import { LoadingScreen } from '../ui/LoadingScreen';
+import type { GameMap } from './maps/types';
 import { devLog } from '../util/devlog';
 
 /**
@@ -20,38 +22,30 @@ export function GameCanvas() {
   const mapId = useGameStore((s) => s.mapId);
   const quality = useGameStore((s) => s.ui.quality);
   const mode = useGameStore((s) => s.ui.qualityMode);
-  const [ready, setReady] = useState(mode !== 'auto');
-  const map = useMemo(() => getMap(mapId), [mapId]);
+  const [stage, setStage] = useState<{ label: string; progress: number; map: GameMap | null }>({ label: 'Checking your device…', progress: 0.35, map: null });
 
   useEffect(() => {
-    if (mode !== 'auto') {
-      gameStore.getState().setUi({ quality: mode });
-      setReady(true);
-      return;
-    }
     let alive = true;
-    void detectTier().then((r) => {
-      if (!alive) return;
-      devLog(`[quality] auto -> ${r.tier} (${r.reason}; gpu "${r.gpu}")`);
-      gameStore.getState().setUi({ quality: r.tier });
-      setReady(true);
-    });
+    const run = async () => {
+      if (mode === 'auto') {
+        const r = await detectTier();
+        if (!alive) return;
+        devLog(`[quality] auto -> ${r.tier} (${r.reason}; gpu "${r.gpu}")`);
+        gameStore.getState().setUi({ quality: r.tier });
+      } else gameStore.getState().setUi({ quality: mode });
+      setStage((s) => ({ ...s, label: 'Building the beach…', progress: 0.65 }));
+      // let the progress bar paint before the (synchronous) map build
+      await new Promise((res) => setTimeout(res, 30));
+      const map = await loadMap(mapId);
+      if (alive) setStage({ label: 'Almost there…', progress: 0.9, map });
+    };
+    void run();
     return () => {
       alive = false;
     };
-  }, [mode]);
+  }, [mode, mapId]);
 
-  if (!ready)
-    return (
-      <div className="absolute inset-0 flex items-center justify-center bg-[#2E4A35] text-lg font-bold text-white">
-        <div className="flex flex-col items-center gap-3">
-          <div>Getting the beach ready…</div>
-          <div className="h-1.5 w-48 overflow-hidden rounded-full bg-white/20">
-            <div className="h-full w-1/3 animate-pulse rounded-full bg-white/80" />
-          </div>
-        </div>
-      </div>
-    );
+  if (!stage.map) return <LoadingScreen stage={stage.label} progress={stage.progress} />;
   return (
     <div className="absolute inset-0 touch-none select-none">
       <Canvas
@@ -62,7 +56,7 @@ export function GameCanvas() {
         gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }}
         camera={{ fov: 38, near: 0.5, far: 500, position: [0, 20, 20] }}
       >
-        <World map={map} quality={quality} />
+        <World map={stage.map} quality={quality} />
       </Canvas>
     </div>
   );

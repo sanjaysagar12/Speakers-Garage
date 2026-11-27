@@ -1,11 +1,12 @@
 import { StrictMode, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
+import App from './App';
 import './index.css';
 
 const params = new URLSearchParams(window.location.search);
-// ?shots opens the view-angle test scene used by `npm run shots`; it is code-split out of the game bundle
 // ?shots (view-angle test scene for `npm run shots`) exists in dev builds only
-const Root = import.meta.env.DEV && params.has('shots') ? lazy(() => import('./dev/ShotsScene')) : lazy(() => import('./App'));
+const Shots = import.meta.env.DEV && params.has('shots') ? lazy(() => import('./dev/ShotsScene')) : null;
+const Root = Shots ?? App;
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
