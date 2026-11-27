@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { ArrowHelper, BoxGeometry, BufferGeometry, Color, Float32BufferAttribute, InstancedMesh, LineBasicMaterial, LineLoop, MeshBasicMaterial, Object3D, Vector3 } from 'three';
 import { GAME_CONFIG } from '../config';
-import { deckAt, standHeight } from '../maps/deck';
+import { deckAt, standHeight } from '@shoreline/shared';
 import { useWorld } from './runtime';
 
 const R = 7;

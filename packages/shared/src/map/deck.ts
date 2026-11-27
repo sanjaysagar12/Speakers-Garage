@@ -1,4 +1,4 @@
-import type { Deck, GameMap } from './types';
+import type { Deck, MapData } from './types';
 
 /** Is (x,z) on the deck rectangle (three's rotation.y convention), with optional padding. */
 export function pointInDeck(dk: Deck, x: number, z: number, pad = 0): boolean {
@@ -26,7 +26,7 @@ export function deckHeight(dk: Deck, x: number, z: number): number {
 }
 
 /** Highest deck under a point, if any. */
-export function deckAt(map: GameMap, x: number, z: number): Deck | null {
+export function deckAt(map: MapData, x: number, z: number): Deck | null {
   return deckAtIn(map.decks, x, z);
 }
 
@@ -46,7 +46,7 @@ export function deckAtIn(decks: readonly Deck[], x: number, z: number): Deck | n
 }
 
 /** Height the feet stand at: deck floor, else ground minus wading depth. */
-export function standHeight(map: GameMap, x: number, z: number): number {
+export function standHeight(map: MapData, x: number, z: number): number {
   const dk = deckAt(map, x, z);
   if (dk) return deckHeight(dk, x, z);
   return map.groundHeight(x, z) - map.wadeDepth(x, z);
@@ -56,7 +56,7 @@ export function standHeight(map: GameMap, x: number, z: number): number {
  * The guarded deck (pier) a point belongs to, for edge rules. A point just beyond a deck's open start edge
  * (the shore entrance) counts as connected to it, so the entrance stays walkable while the sides are walls.
  */
-export function guardZone(map: GameMap, x: number, z: number): { deck: Deck | null; entrance: Deck | null } {
+export function guardZone(map: MapData, x: number, z: number): { deck: Deck | null; entrance: Deck | null } {
   let deck: Deck | null = null;
   let entrance: Deck | null = null;
   for (const dk of map.decks) {

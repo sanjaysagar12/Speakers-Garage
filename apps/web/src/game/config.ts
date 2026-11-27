@@ -1,20 +1,13 @@
+import { DEG, SIM } from '@shoreline/shared';
+
 /**
  * Single source of truth for tunable constants. World units are metres: x = east, z = south, y = up.
  * Map "north" is -z, and the default camera yaw looks north.
  */
 export const GAME_CONFIG = {
+  /** movement constants come from the shared simulation (the server runs the same numbers) */
   player: {
-    walkSpeed: 3.4,
-    runSpeed: 6.4,
-    shallowMultiplier: 0.55,
-    /** units/s² style responsiveness of the velocity filter */
-    acceleration: 11,
-    /** radians/s the body turns toward the movement direction */
-    turnSpeed: 10,
-    /** collider: circle approximated by a square half-extent */
-    radius: 0.28,
-    /** largest height change walkable in one step (deck edges are taller; ramps are not) */
-    stepHeight: 0.4,
+    ...SIM.player,
     height: 1.7,
     stride: { walk: 1.25, run: 2.1 },
   },
@@ -36,10 +29,7 @@ export const GAME_CONFIG = {
     keyYawSpeedDeg: 90,
   },
 
-  collision: {
-    cell: 0.25,
-    pathCell: 0.5,
-  },
+  collision: SIM.collision,
 
   effects: {
     maxFootprints: 64,
@@ -130,4 +120,4 @@ export const QUALITY: Record<Quality, QualityProfile> = {
 /** Governor: FPS below `down` for `downSeconds` -> lower DPR, then the tier; above `up` for `upSeconds` -> one step up. */
 export const GOVERNOR = { down: 45, up: 58, downSeconds: 3, upSeconds: 10, cooldownSeconds: 8, maxFlips: 4 };
 
-export const DEG = Math.PI / 180;
+export { DEG };

@@ -12,13 +12,12 @@
     "lint": "eslint . --max-warnings 0",
     "shots": "node scripts/shots.mjs",
     "typecheck": "tsc --noEmit",
-    "test:movement": "vitest run tests/movement.test.ts",
     "size": "node scripts/size-report.mjs dist",
     "perf": "node scripts/perf.mjs",
     "pier-check": "node scripts/pier-check.mjs",
     "analyze": "ANALYZE=1 vite build",
     "smoke": "node scripts/smoke.mjs",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",

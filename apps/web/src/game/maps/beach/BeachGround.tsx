@@ -4,7 +4,7 @@ import { makeBeachGroundMaterial } from './groundMaterial';
 import { QUALITY } from '../../config';
 import { useGameStore } from '../../../store/useGameStore';
 import type { GameMap } from '../types';
-import type { BeachData } from './index';
+import type { BeachData } from '@shoreline/shared';
 
 /** Packs the shore field into a half-float RGBA texture: d, s, grass, rock. */
 function fieldTexture(data: BeachData): DataTexture {

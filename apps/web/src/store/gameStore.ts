@@ -1,7 +1,7 @@
 import { createStore } from 'zustand/vanilla';
 import type { AvatarConfig, DialogContent, NearbyInteraction } from '../types';
 import { DEFAULT_AVATAR, sanitizeAvatar } from '../game/models/character/catalog';
-import { DEFAULT_MAP, isMapId } from '../game/maps/ids';
+import { DEFAULT_MAP, isMapId } from '@shoreline/shared';
 import { QUALITY_ORDER, type Quality, type QualityMode } from '../game/config';
 
 

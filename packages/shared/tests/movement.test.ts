@@ -7,15 +7,15 @@
  * MOVE_IMPL=legacy runs the original controller for diagnosis.
  */
 import { describe, expect, it } from 'vitest';
-import { createBeachMap } from '../src/game/maps/beach';
-import { CollisionGrid } from '../src/game/systems/CollisionGrid';
-import { deckAt, standHeight } from '../src/game/maps/deck';
-import { stepMovementLegacy, type MoveState } from '../src/game/engine/controller';
-import * as controller from '../src/game/engine/controller';
+import { createBeachMapData } from '../src/map/beach';
+import { CollisionGrid } from '../src/sim/collision';
+import { deckAt, standHeight } from '../src/map/deck';
+import { stepMovementLegacy, type MoveState } from '../src/sim/step';
+import * as controller from '../src/sim/step';
 
 const LEGACY = process.env.MOVE_IMPL === 'legacy';
 const VERBOSE = process.env.MOVE_VERBOSE === '1';
-const map = createBeachMap();
+const map = createBeachMapData();
 const grid = new CollisionGrid(map);
 const env = { map, grid };
 const step = LEGACY ? stepMovementLegacy : (controller as unknown as { stepMovement: typeof stepMovementLegacy }).stepMovement;

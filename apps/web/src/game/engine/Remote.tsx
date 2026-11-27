@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { MathUtils, Vector3 } from 'three';
 import { Character } from '../models/character/Character';
-import { standHeight } from '../maps/deck';
+import { standHeight } from '@shoreline/shared';
 import { useWorld } from './runtime';
 import { GAME_CONFIG } from '../config';
 import { gameBridge } from '../../store/bridge';

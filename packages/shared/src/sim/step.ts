@@ -1,7 +1,7 @@
-import { GAME_CONFIG } from '../config';
-import { guardZone, standHeight } from '../maps/deck';
-import type { GameMap } from '../maps/types';
-import type { CollisionGrid } from '../systems/CollisionGrid';
+import { SIM } from '../config';
+import { guardZone, standHeight } from '../map/deck';
+import type { MapData } from '../map/types';
+import type { CollisionGrid } from './collision';
 
 /**
  * Pure player movement step, shared by the in-game controller and the headless movement test.
@@ -26,7 +26,7 @@ export interface MoveInput {
 }
 
 export interface MoveEnv {
-  map: GameMap;
+  map: MapData;
   grid: CollisionGrid;
 }
 
@@ -45,13 +45,13 @@ export function stepMovementLegacy(s: MoveState, inp: MoveInput, dt: number, env
   const { map, grid } = env;
   const { dx, dz } = desired ?? inputDirection(inp);
   const wade = map.wadeDepth(s.x, s.z);
-  const slow = wade > 0.02 ? GAME_CONFIG.player.shallowMultiplier : 1;
-  const speed = (inp.run ? GAME_CONFIG.player.runSpeed : GAME_CONFIG.player.walkSpeed) * slow;
-  const k = 1 - Math.exp(-GAME_CONFIG.player.acceleration * dt);
+  const slow = wade > 0.02 ? SIM.player.shallowMultiplier : 1;
+  const speed = (inp.run ? SIM.player.runSpeed : SIM.player.walkSpeed) * slow;
+  const k = 1 - Math.exp(-SIM.player.acceleration * dt);
   const out = { ...s };
   out.vx += (dx * speed - out.vx) * k;
   out.vz += (dz * speed - out.vz) * k;
-  const r = GAME_CONFIG.player.radius;
+  const r = SIM.player.radius;
   const nx = out.x + out.vx * dt;
   if (!grid.blockedCircle(nx, out.z, r)) out.x = nx;
   else out.vx = 0;
@@ -89,7 +89,7 @@ export interface StepInfo {
  */
 export function stepMovement(s: MoveState, inp: MoveInput, dt: number, env: MoveEnv, desired?: { dx: number; dz: number }, info?: StepInfo): MoveState {
   const { map, grid } = env;
-  const P = GAME_CONFIG.player;
+  const P = SIM.player;
   const { dx, dz } = desired ?? inputDirection(inp);
   const wade = map.wadeDepth(s.x, s.z);
   const slow = wade > 0.02 ? P.shallowMultiplier : 1;

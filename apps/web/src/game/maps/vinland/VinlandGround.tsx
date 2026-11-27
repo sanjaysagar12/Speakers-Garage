@@ -14,7 +14,7 @@ import {
 } from 'three';
 import { G } from '../../materials/globals';
 import { COLOR_GLSL, GLOBALS_GLSL, NOISE_GLSL } from '../../materials/glsl';
-import { VINLAND_KIND_COLOURS } from './colours';
+import { VINLAND_KIND_COLOURS } from '@shoreline/shared';
 import type { GameMap } from '../types';
 
 const VERT = /* glsl */ `

@@ -1,21 +1,21 @@
-import { GAME_CONFIG } from '../config';
-import { PROPS, type Footprint } from '../models/catalog';
-import type { Deck, GameMap } from '../maps/types';
-import { deckLocal, pointInDeck } from '../maps/deck';
+import { SIM } from '../config';
+import { PROP_META, type Footprint } from '../map/props';
+import type { Deck, MapData } from '../map/types';
+import { deckLocal, pointInDeck } from '../map/deck';
 
 /**
  * Static world collision in metres: map terrain rules (deep water, cliffs, map bounds) plus every prop's
  * footprint, rasterised once into a fine grid. Lookups allocate nothing so they can run every frame.
  */
 export class CollisionGrid {
-  readonly cell = GAME_CONFIG.collision.cell;
+  readonly cell = SIM.collision.cell;
   readonly cols: number;
   readonly rows: number;
   readonly width: number;
   readonly height: number;
   private readonly blocked: Uint8Array;
 
-  constructor(map: GameMap) {
+  constructor(map: MapData) {
     this.width = map.width;
     this.height = map.height;
     this.cols = Math.ceil(map.width / this.cell);
@@ -34,7 +34,7 @@ export class CollisionGrid {
       }
     }
     for (const p of map.props) {
-      const fp = p.footprint ?? PROPS[p.type]?.footprint;
+      const fp = p.footprint ?? PROP_META[p.type]?.footprint;
       if (fp) this.stamp(fp, p.x, p.z, p.rot, p.scale);
     }
     this.guardDecks(map);
@@ -44,7 +44,7 @@ export class CollisionGrid {
    * Elevated decks (the pier) get a blocked band just outside their edges, so a body of the player's radius
    * stays on the planks and slides along the edge. The open start edge (the shore entrance) stays walkable.
    */
-  private guardDecks(map: GameMap, margin = 0.3): void {
+  private guardDecks(map: MapData, margin = 0.3): void {
     const decks = map.decks;
     this.fillValue = 2;
     for (const dk of decks) {

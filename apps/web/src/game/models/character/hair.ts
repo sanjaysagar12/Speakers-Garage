@@ -1,6 +1,6 @@
 import { Color, SphereGeometry, TorusGeometry, Vector3, type Material } from 'three';
 import { ModelBuilder } from '../util/builder';
-import { smoothstep } from '../../util/noise';
+import { smoothstep } from '@shoreline/shared';
 import { ellipsoid, ribbon, rng, sweep } from '../util/geo';
 
 /**
