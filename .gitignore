@@ -1,8 +1,17 @@
+# dependencies and build output
 node_modules
 dist
+.perf-dist
+
+# generated (rebuilt by scripts, never committed)
 public/assets
 .generated
 shots
 pier-check
 perf-results
-.perf-dist
+
+# tooling noise
+*.log
+.DS_Store
+coverage
+.vite

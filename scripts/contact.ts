@@ -82,7 +82,7 @@ async function tilingSheet(): Promise<Buffer> {
 async function main() {
   fs.mkdirSync(outDir, { recursive: true });
   let buf: Buffer;
-  let name = group;
+  const name = group;
   switch (group) {
     case 'terrain': {
       const defs = buildTileDefs();

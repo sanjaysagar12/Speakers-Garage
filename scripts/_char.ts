@@ -81,8 +81,8 @@ const crop = (buf: Buffer, col: number, row: number) =>
 async function main() {
   fs.mkdirSync(out, { recursive: true });
   const comps: OverlayOptions[] = [];
-  let W = 0;
-  let H = 0;
+  let W: number;
+  let H: number;
 
   if (mode === 'hair') {
     // rows: style x direction ; cols: idle0 + 4 walk frames + 2 run frames

@@ -1,5 +1,6 @@
 import { Color, SphereGeometry, TorusGeometry, Vector3, type Material } from 'three';
 import { ModelBuilder } from '../util/builder';
+import { smoothstep } from '../../util/noise';
 import { ellipsoid, ribbon, rng, sweep } from '../util/geo';
 
 /**
@@ -12,13 +13,9 @@ import { ellipsoid, ribbon, rng, sweep } from '../util/geo';
 const HEAD_R = 0.112;
 const CAP_R = HEAD_R * 1.06;
 
-const smooth = (a: number, b: number, x: number) => {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
 
 /** Hairline height (unit-sphere y) as a function of direction: high at the forehead, low at the nape. */
-const hairline = (u: Vector3) => -0.38 + 0.66 * smooth(-0.1, 0.85, u.z) - 0.06 * Math.abs(u.x);
+const hairline = (u: Vector3) => -0.38 + 0.66 * smoothstep(-0.1, 0.85, u.z) - 0.06 * Math.abs(u.x);
 
 /** Shared weight so anything below the nape trails with movement. */
 export const hairSwayWeight = (v: Vector3) => Math.min(1, Math.max(0, (-v.y - 0.07) / 0.42));
@@ -133,11 +130,11 @@ function hangPath(pts: Vector3[], st: Style, r: () => number): void {
     if (front) {
       // over the shoulder and down the chest
       x = Math.sign(last.x) * Math.max(Math.abs(last.x), 0.1 + 0.03 * t);
-      z = last.z + (0.14 - last.z) * smooth(0, 0.5, t);
+      z = last.z + (0.14 - last.z) * smoothstep(0, 0.5, t);
     } else {
       // clear the shoulder blades: shoulders sit at y≈-0.19, |x|≈0.18
       const out = Math.abs(last.x) > 0.06 ? -0.15 : -0.14;
-      z = last.z + (out - last.z) * smooth(0, 0.45, t) - 0.015 * t;
+      z = last.z + (out - last.z) * smoothstep(0, 0.45, t) - 0.015 * t;
       if (Math.abs(x) > 0.13) x = Math.sign(x) * (0.13 + (Math.abs(x) - 0.13) * 0.3);
     }
     if (st.hang === 'wavy') {
@@ -178,7 +175,7 @@ export function buildHair(b: ModelBuilder, mat: Material, style: string, seed = 
   for (let i = 0; i < pos.count; i++) {
     u.fromBufferAttribute(pos, i).normalize();
     const hl = hairline(u) + (style === 'buzz' ? 0.06 : 0);
-    const k = smooth(hl - 0.12, hl + 0.02, u.y);
+    const k = smoothstep(hl - 0.12, hl + 0.02, u.y);
     const rr = (style === 'buzz' ? HEAD_R * 1.025 : CAP_R) * (0.86 + 0.14 * k);
     pos.setXYZ(i, u.x * rr * 0.95, u.y * rr, u.z * rr);
   }
@@ -245,4 +242,3 @@ export function buildHair(b: ModelBuilder, mat: Material, style: string, seed = 
   }
 }
 
-export { HEAD_R };

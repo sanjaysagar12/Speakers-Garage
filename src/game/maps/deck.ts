@@ -27,9 +27,14 @@ export function deckHeight(dk: Deck, x: number, z: number): number {
 
 /** Highest deck under a point, if any. */
 export function deckAt(map: GameMap, x: number, z: number): Deck | null {
+  return deckAtIn(map.decks, x, z);
+}
+
+/** Highest deck of a list under a point (used while a map is still being built). */
+export function deckAtIn(decks: readonly Deck[], x: number, z: number): Deck | null {
   let best: Deck | null = null;
   let bestY = -Infinity;
-  for (const dk of map.decks) {
+  for (const dk of decks) {
     if (!pointInDeck(dk, x, z)) continue;
     const y = deckHeight(dk, x, z);
     if (y > bestY) {

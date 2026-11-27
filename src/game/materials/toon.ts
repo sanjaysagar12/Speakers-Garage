@@ -268,7 +268,7 @@ function makeToon(opts: ToonOpts): ShaderMaterial {
 }
 
 /** Shadow-pass material that applies the same wind displacement, so swaying things cast swaying shadows. */
-export function swayDepth(amp: number, byHeight = 0): MeshDepthMaterial {
+function swayDepth(amp: number, byHeight = 0): MeshDepthMaterial {
   const key = `${amp}:${byHeight}`;
   const hit = depthCache.get(key);
   if (hit) return hit;
@@ -310,10 +310,3 @@ export function attachSwayDepth(root: Object3D): void {
   });
 }
 
-/** For teardown of the whole renderer (tests, hot reload). Normal unmounts keep the cache: it is bounded. */
-export function disposeToonCache(): void {
-  cache.forEach((m) => m.dispose());
-  depthCache.forEach((m) => m.dispose());
-  cache.clear();
-  depthCache.clear();
-}

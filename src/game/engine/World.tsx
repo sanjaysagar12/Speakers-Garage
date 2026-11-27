@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { Suspense, lazy, useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { WorldContext, WorldRuntime, useWorld } from './runtime';
 import { InputController } from './input';
@@ -10,7 +10,6 @@ import { Sun } from './Sun';
 import { WorldClock, Gulls, Crabs, Drift, Smoke } from './Ambient';
 import { Hotspots } from './Hotspots';
 import { PostFX } from './PostFX';
-import { DebugOverlay } from './DebugOverlay';
 import { deckAt, standHeight } from '../maps/deck';
 import { useGameStore } from '../../store/useGameStore';
 import { RemotePlayers } from './Remote';
@@ -51,6 +50,8 @@ function Audio() {
 }
 
 const frameTotals = { calls: 0, triangles: 0 };
+// F3 overlay: dev builds only, loaded on demand
+const DebugOverlay = import.meta.env.DEV ? lazy(() => import('./DebugOverlay').then((m) => ({ default: m.DebugOverlay }))) : null;
 
 /** The whole 3D world for one map. Everything below shares one WorldRuntime through context. */
 export function World({ map, quality }: { map: GameMap; quality: Quality }) {
@@ -136,7 +137,11 @@ export function World({ map, quality }: { map: GameMap; quality: Quality }) {
       {map.ambient.fire && <Smoke at={map.ambient.fire} />}
       <RemotePlayers />
       <Audio />
-      {debug && <DebugOverlay />}
+      {DebugOverlay && debug && (
+        <Suspense fallback={null}>
+          <DebugOverlay />
+        </Suspense>
+      )}
       <PostFX q={q} />
     </WorldContext.Provider>
   );

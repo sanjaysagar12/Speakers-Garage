@@ -6,7 +6,9 @@ import { rng } from '../../models/util/geo';
 import { smoothstep, vnoise } from '../../util/noise';
 import { DEG } from '../../config';
 import type { Deck, GameMap, PropPlacement, TerrainKind } from '../types';
-import { deckHeight, pointInDeck } from '../deck';
+import { deckAtIn, pointInDeck } from '../deck';
+import { hexToRgb } from '../../util/color';
+import { devLog } from '../../../util/devlog';
 import { pierLayout } from '../../models/structures';
 import { boardwalkParams } from '../../models/catalog';
 import type { InteractionAction, InteractionDef } from '../../../types';
@@ -121,19 +123,7 @@ export function createBeachMap(): GameMap & { data: BeachData } {
       decks.push({ x: bx + fx * hz, z: bz + fz * hz, w: dk.head.w, d: dk.head.d, rot, y: baseY + dk.y });
     }
   }
-  const deckAt = (x: number, z: number): Deck | null => {
-    let best: Deck | null = null;
-    let bestY = -Infinity;
-    for (const dk of decks) {
-      if (!pointInDeck(dk, x, z)) continue;
-      const y = deckHeight(dk, x, z);
-      if (y > bestY) {
-        best = dk;
-        bestY = y;
-      }
-    }
-    return best;
-  };
+  const deckAt = (x: number, z: number): Deck | null => deckAtIn(decks, x, z);
 
   // ---- placements
   const props: PropPlacement[] = [];
@@ -328,7 +318,7 @@ export function createBeachMap(): GameMap & { data: BeachData } {
     return 'sand';
   };
 
-  const hex = (h: string): [number, number, number] => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const hex = hexToRgb;
   const C = {
     sand: hex('#FCD484'),
     wet: hex('#E9B565'),
@@ -375,6 +365,6 @@ export function createBeachMap(): GameMap & { data: BeachData } {
     data: { frame, field, domain: RAW.domain },
   };
   map.Ground = createBeachGround(map);
-  if (import.meta.env.DEV) console.info(`[beach] built in ${(performance.now() - t0).toFixed(0)} ms: ${props.length} placements, ${decks.length} decks`);
+  devLog(`[beach] built in ${(performance.now() - t0).toFixed(0)} ms: ${props.length} placements, ${decks.length} decks`);
   return map;
 }

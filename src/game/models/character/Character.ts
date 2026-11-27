@@ -17,7 +17,7 @@ import { ModelBuilder, disposeObject } from '../util/builder';
 import { ellipsoid, lathe, slab, sweep } from '../util/geo';
 import { toon, toonUnique } from '../../materials/toon';
 import { PAL } from '../palette';
-import { buildHair, hairSwayWeight } from './hair';
+import { buildHair } from './hair';
 import type { AvatarConfig } from '../../../types';
 
 /**
@@ -517,4 +517,3 @@ export class Character {
   }
 }
 
-export { hairSwayWeight };

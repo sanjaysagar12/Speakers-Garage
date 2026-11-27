@@ -4,7 +4,7 @@ import { Minimap } from './Minimap';
 import { Joystick } from './Joystick';
 import { Dialog } from './Dialog';
 import { Wardrobe } from './Wardrobe';
-import { DebugPanel } from './DebugPanel';
+import { Suspense, lazy } from 'react';
 
 const clockLabel = (t: number): string => {
   const hours = (t * 24 + 6) % 24; // phase 0 is midnight-ish; shift so 0.3 reads as late morning
@@ -12,6 +12,9 @@ const clockLabel = (t: number): string => {
   const m = Math.floor((hours - h) * 60);
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
+
+/** F3 panel: dev builds only */
+const DebugPanel = import.meta.env.DEV ? lazy(() => import('./DebugPanel').then((m) => ({ default: m.DebugPanel }))) : null;
 
 export function Hud() {
   const name = useGameStore((s) => s.name);
@@ -99,7 +102,11 @@ export function Hud() {
           </div>
         </div>
       )}
-      {ui.debug && <DebugPanel />}
+      {DebugPanel && ui.debug && (
+        <Suspense fallback={null}>
+          <DebugPanel />
+        </Suspense>
+      )}
       <div className="pointer-events-auto">
         <Dialog />
         <Wardrobe />

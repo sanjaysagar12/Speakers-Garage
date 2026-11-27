@@ -4,7 +4,8 @@ import './index.css';
 
 const params = new URLSearchParams(window.location.search);
 // ?shots opens the view-angle test scene used by `npm run shots`; it is code-split out of the game bundle
-const Root = params.has('shots') ? lazy(() => import('./dev/ShotsScene')) : lazy(() => import('./App'));
+// ?shots (view-angle test scene for `npm run shots`) exists in dev builds only
+const Root = import.meta.env.DEV && params.has('shots') ? lazy(() => import('./dev/ShotsScene')) : lazy(() => import('./App'));
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

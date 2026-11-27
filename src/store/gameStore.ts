@@ -4,7 +4,6 @@ import { DEFAULT_AVATAR, sanitizeAvatar } from '../game/models/character/catalog
 import { DEFAULT_MAP, MAP_REGISTRY } from '../game/maps/registry';
 import type { Quality } from '../game/config';
 
-export { DEFAULT_AVATAR };
 
 export type Phase = 'landing' | 'playing';
 

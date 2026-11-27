@@ -2,6 +2,7 @@ import mapJson from './vinland.json';
 import { createVinlandGround } from './VinlandGround';
 import { vnoise } from '../../util/noise';
 import { VINLAND_KIND_COLOURS } from './colours';
+import { hexToRgb } from '../../util/color';
 import type { GameMap, PropPlacement, TerrainKind } from '../types';
 import type { InteractionAction, InteractionDef } from '../../../types';
 
@@ -150,7 +151,7 @@ export function createVinlandMap(): GameMap & { kinds: string[]; heights: Float3
     };
   });
   const sp = layer('spawn')?.objects?.[0];
-  const hex = (h: string): [number, number, number] => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const hex = hexToRgb;
   const kindTerrain: Record<string, TerrainKind> = { deep: 'deep', shallow: 'shallow', rock: 'rock', snow: 'snow', path: 'path', dirt: 'dirt', mud: 'dirt', soil: 'dirt', gravel: 'path' };
   const fire = props.find((p) => p.type === 'campfire');
 

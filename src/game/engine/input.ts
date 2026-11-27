@@ -39,7 +39,7 @@ export class InputController {
       if (!e.repeat) {
         if (k === 'f' || k === ' ' || k === 'enter') this.queue.push('interact');
         if (k === 'r' || k === 'home') this.queue.push('reset');
-        if (k === 'f3') this.queue.push('debug');
+        if (k === 'f3' && import.meta.env.DEV) this.queue.push('debug');
       }
       this.keys.add(k);
     });

@@ -30,7 +30,7 @@ export interface PartOpts {
 
 const tmp = new Vector3();
 
-export function partMatrix(o: Pick<PartOpts, 'pos' | 'rot' | 'scale' | 'matrix'>): Matrix4 {
+function partMatrix(o: Pick<PartOpts, 'pos' | 'rot' | 'scale' | 'matrix'>): Matrix4 {
   if (o.matrix) return o.matrix;
   const s = o.scale ?? 1;
   const sv = typeof s === 'number' ? new Vector3(s, s, s) : new Vector3(...s);
@@ -39,7 +39,7 @@ export function partMatrix(o: Pick<PartOpts, 'pos' | 'rot' | 'scale' | 'matrix'>
 }
 
 /** Normalise a geometry to exactly the attributes the toon shader uses: position, normal, color, aPat, aSway. */
-export function prepGeometry(src: BufferGeometry, opts: PartOpts = {}): BufferGeometry {
+function prepGeometry(src: BufferGeometry, opts: PartOpts = {}): BufferGeometry {
   let g = src.index ? src.clone() : src.clone();
   if (!g.index) {
     const n = g.attributes.position.count;

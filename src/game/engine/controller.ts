@@ -31,7 +31,7 @@ export interface MoveEnv {
 }
 
 /** Camera-relative input -> world direction. forward = (-sin yaw, -cos yaw), right = (cos yaw, -sin yaw). */
-export function inputDirection(inp: MoveInput): { dx: number; dz: number } {
+function inputDirection(inp: MoveInput): { dx: number; dz: number } {
   const dx = Math.cos(inp.yaw) * inp.x - Math.sin(inp.yaw) * inp.y;
   const dz = -Math.sin(inp.yaw) * inp.x - Math.cos(inp.yaw) * inp.y;
   return { dx, dz };

@@ -376,5 +376,3 @@ export function buildHut(p: { w?: number; d?: number; h?: number; wall?: string;
   return b.build('hut');
 }
 
-/** For cleanup paths that build glow meshes outside the builder. */
-export const disposeSharedStructureMaterials = () => glowMat.dispose();

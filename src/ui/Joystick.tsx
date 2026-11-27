@@ -5,7 +5,7 @@ const R = 56;
 
 /** Virtual joystick. Writes to the hot `inputState` object (no React renders while dragging). */
 export function Joystick() {
-  const knob = useRef<HTMLImageElement>(null);
+  const knob = useRef<HTMLDivElement>(null);
   const id = useRef<number | null>(null);
   const base = useRef<HTMLDivElement>(null);
 
@@ -46,8 +46,8 @@ export function Joystick() {
       onPointerUp={end}
       onPointerCancel={end}
     >
-      <img src={`${import.meta.env.BASE_URL}assets/ui/ui_joystick_base.png`} alt="" className="pointer-events-none h-full w-full" draggable={false} />
-      <img ref={knob} src={`${import.meta.env.BASE_URL}assets/ui/ui_joystick_knob.png`} alt="" draggable={false} className="pointer-events-none absolute left-1/2 top-1/2 -ml-7 -mt-7 h-14 w-14" />
+      <div className="pointer-events-none h-full w-full rounded-full border-4 border-white/70 bg-black/15 shadow-inner" />
+      <div ref={knob} className="pointer-events-none absolute left-1/2 top-1/2 -ml-7 -mt-7 h-14 w-14 rounded-full border-2 border-white bg-white/80 shadow-lg" />
     </div>
   );
 }

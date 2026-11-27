@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import { devLog } from '../../util/devlog';
 import { Vector3 } from 'three';
 import { GAME_CONFIG, DEG } from '../config';
 import { CollisionGrid } from '../systems/CollisionGrid';
@@ -49,7 +50,7 @@ export class WorldRuntime {
     this.player.pos.set(map.spawn.x, standHeight(map, map.spawn.x, map.spawn.z), map.spawn.z);
     this.player.facing = map.spawn.facing;
     this.camera.focus.copy(this.player.pos);
-    if (import.meta.env.DEV) console.info(`[world] collision + pathfinding ${(performance.now() - t0).toFixed(0)} ms`);
+    devLog(`[world] collision + pathfinding ${(performance.now() - t0).toFixed(0)} ms`);
   }
 }
 
