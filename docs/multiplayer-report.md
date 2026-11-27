@@ -72,8 +72,19 @@ two moving frames.)
 - Movement now runs on a fixed 60 Hz step, so it moves in real time at any frame rate. The old
   per-frame 0.05 s clamp made the player slower below 20 FPS. At 20 FPS and above, movement is
   unchanged.
-- Bundle and FPS checks against the optimization pass: see the final summary in the iteration notes
-  (landing chunk still small, world chunk still lazy).
+- Against the optimization pass (`scripts/perf.mjs`, same machine, SwiftShader, offline fallback):
+
+  | | Ultra-Low before → now | Low before → now |
+  |---|---|---|
+  | FPS avg / 1% low | 7.7 / 2.4 → 7.3 / 2.2 | 2.5 / 0.5 → 3.4 / 1.2 |
+  | Draw calls / triangles | 75 / 139k → 68 / 136k | 147 / 297k → 142 / 297k |
+  | JS heap after 2 min | 70.8 → 70.0 MB | 72.9 → 73.3 MB |
+  | Download: landing / entering the world | 289 / 66 → 291 / 84 KB | same |
+
+  Differences are within run-to-run noise. The landing chunk is 7.8 KB gzip (5.6 before; the room
+  picker). The world chunk grew by ~12 KB gzip (networking, voice, social UI) and is still loaded only
+  on entry. zod is not in the web bundle (the server-only schemas live in `@shoreline/shared/schemas`).
+- A fresh clone passes `pnpm install --frozen-lockfile && pnpm build && pnpm typecheck && pnpm lint && pnpm test`.
 
 ## Known limitations
 
