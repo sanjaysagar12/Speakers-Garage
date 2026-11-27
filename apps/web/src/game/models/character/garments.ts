@@ -2,6 +2,7 @@ import { BufferGeometry, Vector3, type Material, type Matrix4 } from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { smoothstep } from '@speakersgarage/shared';
 import { ModelBuilder } from '../util/builder';
+import { toon } from '../../materials/toon';
 import { slab, sweep } from '../util/geo';
 import { BONE_INDEX, SEGMENTS, ringAt, type BoneName, type EllipsoidSeg, type SegName, type TubeSeg } from './rig';
 import { band, ellipsoidShell, onTube, ringGrid, tubePatch, tubeShell, type ShellOpts } from './shell';
@@ -107,7 +108,8 @@ function waistband(ctx: FitCtx, rest: Rest, y: number, offset: number, mat: Mate
 
 /** Cords hanging from a point (drawstrings, laces) in the current frame. */
 function cord(ctx: FitCtx, pts: Vector3[], r: number, color: string): void {
-  ctx.b.add(sweep(pts, r, 5, Math.max(4, pts.length * 3)), { color, mat: ctx.trim });
+  // double-sided: a thin swept cord's winding depends on the path direction
+  ctx.b.add(sweep(pts, r, 5, Math.max(4, pts.length * 3)), { color, mat: toon({ color: '#ffffff', double: true }) });
 }
 
 /* ---------------------------------------------------------------- tops --------------------------------- */

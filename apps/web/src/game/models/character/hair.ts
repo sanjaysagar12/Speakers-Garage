@@ -79,7 +79,7 @@ const STYLES: Record<string, Style> = {
   bun: {
     part: 0, kx: 0.4, kz: 0.2, tie: new Vector3(0, 0.105, -0.07), hang: 'none', hangTo: 0, width: 0.032, roots: 90, puff: 1.08,
     endY: (p) => (zone(p).front ? 0.05 : -1),
-    hatMode: { open: new Vector3(0, -0.006, -0.13), closed: new Vector3(0, -0.04, -0.122) },
+    hatMode: { open: new Vector3(0, -0.012, -0.136), closed: new Vector3(0, -0.04, -0.122) },
   },
   braid: {
     part: 0.0, kx: 0.5, kz: 0.25, tie: new Vector3(0, -0.06, -0.112), hang: 'none', hangTo: 0, width: 0.032, roots: 90, puff: 1.08,
@@ -199,6 +199,8 @@ export interface HairFit {
   back: number;
   /** glasses worn: hair over the temple line rests on the temples */
   glasses?: boolean;
+  /** internal: called as the builder moves from the skull layer to the clumps to the ties */
+  phase?: (ph: 'clumps' | 'ties') => void;
 }
 
 /** Builds the hair for `style` into `b` with the (unique, swinging) hair material. Vertex colours are tone factors. */
@@ -206,8 +208,12 @@ export function buildHair(b: ModelBuilder, mat: Material, style: string, fit: Ha
   const base = STYLES[style] ?? STYLES.short;
   const tie = fit.hat && base.tie && base.hatMode ? ((fit.hat.opening ? base.hatMode.open : base.hatMode.closed) ?? base.tie) : base.tie;
   const st: Style = { ...base, tie };
-  const mask = fit.hat ? hairMask(fit.hat) : bareHairMask;
-  b.setMask(fit.glasses ? overTemples(mask) : mask);
+  const wrap = (m: VertexMask) => (fit.glasses ? overTemples(m) : m);
+  const mask = wrap(fit.hat ? hairMask(fit.hat) : bareHairMask);
+  const clumpMask = wrap(fit.hat ? hairMask(fit.hat, 'clumps') : bareHairMask);
+  const tieMask = wrap(fit.hat ? hairMask(fit.hat, 'tie') : bareHairMask);
+  b.setMask(mask);
+  fit = { ...fit, phase: (ph) => b.setMask(ph === 'clumps' ? clumpMask : tieMask) };
   try {
     buildStyle(b, mat, style, st, fit, seed);
   } finally {
@@ -248,6 +254,7 @@ function buildStyle(b: ModelBuilder, mat: Material, style: string, st: Style, fi
     roots.push(new Vector3(Math.sin(a) * 0.55, 0.72, 0.42 + Math.cos(a) * 0.1).normalize());
   }
 
+  fit.phase?.('clumps');
   const R = CAP_R * 1.02;
   for (const root of roots) {
     const path = scalpPath(root, st, R * (st.puff + (r() - 0.5) * 0.04));
@@ -262,6 +269,7 @@ function buildStyle(b: ModelBuilder, mat: Material, style: string, st: Style, fi
     addClump(b, mat, path, st.width * (0.85 + r() * 0.35), tones[Math.floor(r() * tones.length)]);
   }
 
+  fit.phase?.('ties');
   // tied styles
   if (style === 'ponytail' && st.tie) {
     const t = st.tie;

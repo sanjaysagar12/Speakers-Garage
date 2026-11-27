@@ -34,6 +34,11 @@ const filters = filter.split(',');
 const keys = (await page.evaluate(() => window.__shots.keys)).filter((k) => filters.some((f) => k.includes(f)) && (/fit:|head:/.test(filter) || !/^(fit|head):/.test(k)));
 console.log(`${keys.length} entries x ${YAWS.length} yaws`);
 
+// warm-up: the very first frame after load can be captured before the scene draws
+if (keys.length) {
+  await page.evaluate(([k]) => window.__shots.show(k, 1), [keys[0]]);
+  await page.screenshot({ timeout: 180000 });
+}
 const rows = [];
 for (const key of keys) {
   const tiles = [];

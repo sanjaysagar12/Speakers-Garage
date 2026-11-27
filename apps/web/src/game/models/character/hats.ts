@@ -459,14 +459,18 @@ function deepInSkull(p: Vector3): boolean {
  * dropped when fully hidden); hair hanging below the band is tucked towards the scalp so it comes out
  * from under the rim instead of bulging through it; wide brims squash the hair under them.
  */
-export function hairMask(f: HatFit): VertexMask {
+export function hairMask(f: HatFit, layer: 'skull' | 'clumps' | 'tie' = 'skull'): VertexMask {
+  const throughOpening = layer !== 'clumps';
   const m = f.margin - f.rim * 2 - 0.0015;
   const u = new Vector3();
   return {
     hidden: (p) => {
       const h = p.y - bandY(f, p.z);
       // everything above the band near the head is under the hat, except what leaves through the opening
-      if (h > -0.001 && !inOpening(f, p)) {
+      // (only the skull layer and a tie may: crown clumps heading for the tie would stretch through it)
+      // a tie (bun, ponytail) sits outside the hat: only what is actually inside the hat is hidden
+      if (layer === 'tie') return insideHat(f, p, 0.003);
+      if (h > -0.001 && !(throughOpening && inOpening(f, p))) {
         u.copy(p).normalize();
         return p.length() < HEAD.surface(u) + 0.07;
       }
