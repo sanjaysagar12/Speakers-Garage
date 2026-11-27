@@ -28,6 +28,9 @@ import type { AvatarConfig } from '../../../types';
  * Local frame: feet at y = 0, facing +z.
  */
 
+/** frame-loop scratch (no allocation per frame) */
+const SWING_TARGET = new Vector3();
+
 const HIP_Y = 0.88;
 const THIGH = 0.42;
 const SHIN = 0.41;
@@ -491,7 +494,7 @@ export class Character {
     P.head.rotation.y = idleW * 0.12 * Math.sin(t * 0.31) * Math.sin(t * 0.17);
 
     // hair / scarf spring: trails opposite to velocity, bounces with the gait, nudged by wind
-    const targetSwing = new Vector3(-mo.localVel.x * 0.012, -Math.abs(bob) * 0.5, -mo.localVel.z * 0.011 - 0.004);
+    const targetSwing = SWING_TARGET.set(-mo.localVel.x * 0.012, -Math.abs(bob) * 0.5, -mo.localVel.z * 0.011 - 0.004);
     targetSwing.x += Math.sin(t * 1.3) * 0.006;
     const k = 70;
     const damp = 9;

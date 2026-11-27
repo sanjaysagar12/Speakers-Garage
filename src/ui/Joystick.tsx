@@ -1,10 +1,10 @@
-import { useRef } from 'react';
+import { memo, useRef } from 'react';
 import { inputState } from '../store/input';
 
 const R = 56;
 
 /** Virtual joystick. Writes to the hot `inputState` object (no React renders while dragging). */
-export function Joystick() {
+export const Joystick = memo(function Joystick() {
   const knob = useRef<HTMLDivElement>(null);
   const id = useRef<number | null>(null);
   const base = useRef<HTMLDivElement>(null);
@@ -50,4 +50,4 @@ export function Joystick() {
       <div ref={knob} className="pointer-events-none absolute left-1/2 top-1/2 -ml-7 -mt-7 h-14 w-14 rounded-full border-2 border-white bg-white/80 shadow-lg" />
     </div>
   );
-}
+});

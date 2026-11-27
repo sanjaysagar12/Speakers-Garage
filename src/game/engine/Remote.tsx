@@ -19,14 +19,26 @@ function RemotePlayer({ r }: { r: Remote }) {
   const c = useMemo(() => new Character(r.profile.avatar), [r.profile.avatar]);
   useEffect(() => () => c.dispose(), [c]);
   const pos = useMemo(() => new Vector3(r.state.x, 0, r.state.y), [r]);
+  const scratch = useMemo(() => ({ target: new Vector3(), before: new Vector3(), motion: { speed: 0, running: false, wade: 0, turnRate: 0, localVel: new Vector3() }, acc: 0 }), []);
   useFrame((_, dt) => {
-    const target = new Vector3(r.state.x, standHeight(world.map, r.state.x, r.state.y), r.state.y);
-    const before = pos.clone();
-    pos.lerp(target, 1 - Math.exp(-10 * dt));
-    const v = pos.clone().sub(before).divideScalar(Math.max(dt, 1e-3));
+    const sc = scratch;
+    sc.before.copy(pos);
+    sc.target.set(r.state.x, standHeight(world.map, r.state.x, r.state.y), r.state.y);
+    pos.lerp(sc.target, 1 - Math.exp(-10 * dt));
+    const sp = Math.hypot(pos.x - sc.before.x, pos.z - sc.before.z) / Math.max(dt, 1e-3);
     c.root.position.copy(pos);
     c.root.rotation.y = MathUtils.lerp(c.root.rotation.y, r.state.facing, 0.2);
-    c.update(dt, { speed: Math.hypot(v.x, v.z), running: r.state.running, wade: r.state.inWater ? 0.5 : 0, turnRate: 0, localVel: new Vector3(0, 0, Math.hypot(v.x, v.z)) });
+    // distant players animate at a quarter of the frame rate
+    const far = Math.abs(pos.x - world.player.pos.x) + Math.abs(pos.z - world.player.pos.z) > 35;
+    sc.acc += dt;
+    if (far && sc.acc < 0.066) return;
+    const step = sc.acc;
+    sc.acc = 0;
+    sc.motion.speed = sp;
+    sc.motion.running = r.state.running;
+    sc.motion.wade = r.state.inWater ? 0.5 : 0;
+    sc.motion.localVel.set(0, 0, sp);
+    c.update(step, sc.motion);
   });
   return <primitive object={c.root} dispose={null} />;
 }

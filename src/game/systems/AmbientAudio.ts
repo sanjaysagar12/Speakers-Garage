@@ -115,6 +115,7 @@ export class AmbientAudio {
   }
 
   resume(): void {
+    if (this.muted) return;
     if (this.ctx?.state === 'suspended') void this.ctx.resume();
   }
   suspend(): void {
@@ -123,7 +124,11 @@ export class AmbientAudio {
 
   setMuted(m: boolean): void {
     this.muted = m;
-    if (this.master && this.ctx) this.master.gain.setTargetAtTime(m ? 0 : 0.75, this.ctx.currentTime, 0.08);
+    if (!this.master || !this.ctx) return;
+    this.master.gain.setTargetAtTime(m ? 0 : 0.75, this.ctx.currentTime, 0.08);
+    // muted: stop the synthesis graph entirely (suspend after the fade); unmuted: resume
+    if (m) window.setTimeout(() => this.muted && this.suspend(), 300);
+    else this.resume();
   }
 
   /** a short synthesised bird call */

@@ -163,29 +163,31 @@ export class FxEmitter {
   update(dt: number): void {
     // footprints fade out
     let touched = false;
-    this.printState.forEach((p, i) => {
+    for (let i = 0; i < this.printState.length; i++) {
+      const p = this.printState[i];
       if (p.age >= p.life) {
         if (this.prints.fade.array[i] !== 0) {
           this.prints.fade.array[i] = 0;
           touched = true;
         }
-        return;
+        continue;
       }
       p.age += dt;
       const k = 1 - p.age / p.life;
       this.prints.fade.array[i] = p.alpha * Math.min(1, k * 3);
       touched = true;
-    });
+    }
     if (touched) this.prints.fade.needsUpdate = true;
 
     let rTouched = false;
-    this.rippleState.forEach((r, i) => {
+    for (let i = 0; i < this.rippleState.length; i++) {
+      const r = this.rippleState[i];
       if (r.age >= r.life) {
         if (this.ripples.fade.array[i] !== 0) {
           this.ripples.fade.array[i] = 0;
           rTouched = true;
         }
-        return;
+        continue;
       }
       r.age += dt;
       const t = r.age / r.life;
@@ -196,20 +198,21 @@ export class FxEmitter {
       this.ripples.mesh.setMatrixAt(i, dummy.matrix);
       this.ripples.fade.array[i] = 0.85 * (1 - t);
       rTouched = true;
-    });
+    }
     if (rTouched) {
       this.ripples.fade.needsUpdate = true;
       this.ripples.mesh.instanceMatrix.needsUpdate = true;
     }
 
     let pTouched = false;
-    this.partState.forEach((p, i) => {
+    for (let i = 0; i < this.partState.length; i++) {
+      const p = this.partState[i];
       if (p.age >= p.life) {
         if (this.parts.fade.array[i] !== 0) {
           this.parts.fade.array[i] = 0;
           pTouched = true;
         }
-        return;
+        continue;
       }
       p.age += dt;
       p.vel.y -= p.grav * dt;
@@ -223,7 +226,7 @@ export class FxEmitter {
       this.parts.mesh.setMatrixAt(i, dummy.matrix);
       this.parts.fade.array[i] = 1 - t * t;
       pTouched = true;
-    });
+    }
     if (pTouched) {
       this.parts.fade.needsUpdate = true;
       this.parts.mesh.instanceMatrix.needsUpdate = true;

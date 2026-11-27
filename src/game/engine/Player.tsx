@@ -11,6 +11,9 @@ import { gameStore } from '../../store/gameStore';
 import type { Vec2 } from '../../types';
 
 const tmp = new Vector3();
+const UP = new Vector3(0, 1, 0);
+/** reused every frame (no per-frame allocation) */
+const motion = { speed: 0, running: false, wade: 0, turnRate: 0, localVel: new Vector3() };
 const ray = new Raycaster();
 const ndc = new Vector2();
 
@@ -172,8 +175,12 @@ export function Player() {
 
     character.root.position.copy(P.pos);
     character.root.rotation.y = P.facing;
-    const lv = tmp.set(P.vel.x, 0, P.vel.z).applyAxisAngle(new Vector3(0, 1, 0), -P.facing);
-    character.update(dt, { speed: hs, running: P.running, wade: Math.min(1, wade / 0.45), turnRate, localVel: lv });
+    motion.localVel.set(P.vel.x, 0, P.vel.z).applyAxisAngle(UP, -P.facing);
+    motion.speed = hs;
+    motion.running = P.running;
+    motion.wade = Math.min(1, wade / 0.45);
+    motion.turnRate = turnRate;
+    character.update(dt, motion);
 
     // wading leaves a slow trail of ripples even between steps
     if (wade > 0.08 && P.moving && Math.random() < dt * 5) world.fx?.ripple(P.pos.x, P.pos.y + wade, P.pos.z, 0.9);

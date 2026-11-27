@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { gameStore } from '../store/gameStore';
 import { useGameStore } from '../store/useGameStore';
 import { getMap } from '../game/maps/registry';
@@ -56,7 +56,7 @@ function raster(map: GameMap): HTMLCanvasElement {
 }
 
 /** Circular, player-centred minimap that rotates with the camera so "up" is always where the camera looks. */
-export function Minimap() {
+export const Minimap = memo(function Minimap() {
   const ref = useRef<HTMLCanvasElement>(null);
   const mapId = useGameStore((s) => s.mapId);
   useEffect(() => {
@@ -125,8 +125,9 @@ export function Minimap() {
       ctx.restore();
     };
     draw();
-    const unsub = gameStore.subscribe(() => {
-      if (!raf) raf = requestAnimationFrame(draw);
+    // redraw only when the position/yaw actually changed (not on every store update)
+    const unsub = gameStore.subscribe((s, prev) => {
+      if (s.position !== prev.position && !raf) raf = requestAnimationFrame(draw);
     });
     return () => {
       unsub();
@@ -134,4 +135,4 @@ export function Minimap() {
     };
   }, [mapId]);
   return <canvas ref={ref} aria-label="Minimap" className="block rounded-full" style={{ width: SIZE, height: SIZE }} />;
-}
+});

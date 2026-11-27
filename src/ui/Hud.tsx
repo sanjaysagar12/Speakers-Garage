@@ -1,3 +1,4 @@
+import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../store/useGameStore';
 import { gameBridge } from '../store/bridge';
 import { Minimap } from './Minimap';
@@ -21,7 +22,18 @@ const DebugPanel = import.meta.env.DEV ? lazy(() => import('./DebugPanel').then(
 
 export function Hud() {
   const name = useGameStore((s) => s.name);
-  const ui = useGameStore((s) => s.ui);
+  // only the fields the HUD shows (shallow compare): no re-render for unrelated ui changes
+  const ui = useGameStore(
+    useShallow((s) => ({
+      muted: s.ui.muted,
+      dayNight: s.ui.dayNight,
+      timeOfDay: s.ui.dayNight ? s.ui.timeOfDay : 0,
+      hintOpen: s.ui.hintOpen,
+      isTouch: s.ui.isTouch,
+      settingsOpen: s.ui.settingsOpen,
+      debug: s.ui.debug,
+    })),
+  );
   const setUi = useGameStore((s) => s.setUi);
   const nearby = useGameStore((s) => s.nearby);
   const leave = useGameStore((s) => s.leaveWorld);

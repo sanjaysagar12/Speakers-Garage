@@ -61,7 +61,8 @@ export const GAME_CONFIG = {
   },
 
   net: { sendIntervalMs: 100 },
-  ui: { positionPublishMs: 80 },
+  /** HUD / minimap position updates: ~8 Hz is plenty and keeps React out of the frame loop */
+  ui: { positionPublishMs: 125 },
 } as const;
 
 /** Rendering tiers, lowest to highest. 'auto' (the default setting) lets detection + the governor pick. */

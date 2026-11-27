@@ -23,6 +23,8 @@ import { useGameStore } from '../../store/useGameStore';
 const dummy = new Object3D();
 const MIDDAY_SUN = new Vector3(-0.5, 1.0, -0.28).normalize();
 const white = new Color(1, 1, 1);
+const SUN_TARGET = new Vector3();
+const SUN_COL = new Color();
 const golden = new Color(1.08, 0.9, 0.7);
 const sunset = new Color(1.12, 0.72, 0.55);
 
@@ -43,9 +45,9 @@ export function WorldClock() {
     const phase = cycle ? (t / GAME_CONFIG.dayCycle.cycleSeconds) % 1 : 0;
     const k = cycle ? 0.5 - 0.5 * Math.cos(phase * Math.PI * 2) : 0; // 0 midday .. 1 sunset
     const el = MathUtils.lerp(1.0, 0.36, k);
-    const target = new Vector3(MIDDAY_SUN.x * (1 + k * 0.9), el, MIDDAY_SUN.z * (1 - k * 0.5)).normalize();
+    const target = SUN_TARGET.set(MIDDAY_SUN.x * (1 + k * 0.9), el, MIDDAY_SUN.z * (1 - k * 0.5)).normalize();
     G.uSunDir.value.lerp(target, 1 - Math.exp(-3 * dt)).normalize();
-    const col = k < 0.5 ? white.clone().lerp(golden, k * 2) : golden.clone().lerp(sunset, (k - 0.5) * 2);
+    const col = k < 0.5 ? SUN_COL.copy(white).lerp(golden, k * 2) : SUN_COL.copy(golden).lerp(sunset, (k - 0.5) * 2);
     G.uSunColor.value.lerp(col, 1 - Math.exp(-3 * dt));
     G.uWarm.value = MathUtils.damp(G.uWarm.value, k, 3, dt);
     if (cycle) gameBridge.publishTimeOfDay(phase);
@@ -264,17 +266,18 @@ export function Smoke({ at }: { at: { x: number; z: number } }) {
     const dt = Math.min(rawDt, 0.05);
     const y0 = world.map.groundHeight(at.x, at.z);
     const w = G.uWind.value;
-    puffs.forEach((p, i) => {
+    for (let i = 0; i < puffs.length; i++) {
+      const p = puffs[i];
       p.age += dt;
       if (p.age > p.life) p.age -= p.life;
       const k = p.age / p.life;
       dummy.position.set(at.x + w.x * w.y * k * 3 + Math.sin(k * 6 + i) * 0.1, y0 + 0.8 + k * 3.2, at.z + w.z * w.y * k * 3);
-      const s = 0.12 + k * 0.45;
+      const s = k > 0.92 ? 0 : 0.12 + k * 0.45;
       dummy.scale.set(s, s * 0.85, s);
       dummy.rotation.set(0, i, 0);
       dummy.updateMatrix();
-      mesh.setMatrixAt(i, k > 0.92 ? new Object3D().matrix.makeScale(0, 0, 0) : dummy.matrix);
-    });
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
     mesh.instanceMatrix.needsUpdate = true;
   });
   return <primitive object={mesh} dispose={null} />;
