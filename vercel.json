@@ -3,11 +3,15 @@
   "services": {
     "server": {
       "root": "apps/server",
-      "framework": "fastify"
+      "framework": "fastify",
+      "entrypoint": "src/index.ts",
+      "buildCommand": "pnpm --filter @speakersgarage/shared build"
     },
     "web": {
       "root": "apps/web",
-      "framework": "vite"
+      "framework": "vite",
+      "buildCommand": "pnpm exec vite build",
+      "outputDirectory": "dist"
     }
   },
   "rewrites": [
