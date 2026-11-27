@@ -25,6 +25,8 @@ const envSchema = z.object({
   MAX_ROOMS: z.coerce.number().int().min(1).max(10_000).default(200),
   AOI_RADIUS: z.coerce.number().min(5).max(300).default(NET.aoiRadius),
   DEFAULT_MAP: z.enum(['beach', 'vinland']).default('beach'),
+  /** WebSocket connection attempts per IP per minute (raise for load tests behind one IP) */
+  WS_CONNECTS_PER_MINUTE: z.coerce.number().int().min(1).max(100_000).default(30),
   /** STUN fallback (public) */
   STUN_URLS: list('stun:stun.l.google.com:19302'),
   /** coturn: e.g. turn:turn.example.com:3478?transport=udp,turns:turn.example.com:5349?transport=tcp */

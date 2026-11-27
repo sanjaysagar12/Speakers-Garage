@@ -54,15 +54,27 @@ export async function buildApp({ env, store = new MemoryPlayerStore() }: AppDeps
   await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
   await app.register(websocket, { options: { maxPayload: NET.maxMessageBytes, perMessageDeflate: false } });
 
-  app.get('/health', { config: { rateLimit: false } }, async () => ({ ok: true, protocol: PROTOCOL_VERSION, uptime: Math.round(process.uptime()) }));
-  app.get('/rooms', async () => ({ rooms: rooms.list(), capacity: env.MAX_PLAYERS_PER_ROOM }));
+  app.get('/health', { config: { rateLimit: false } }, async () => {
+    const mem = process.memoryUsage();
+    const cpu = process.cpuUsage();
+    return {
+      ok: true,
+      protocol: PROTOCOL_VERSION,
+      uptime: Math.round(process.uptime()),
+      // process stats for the load test and monitoring (no user data)
+      rssMB: +(mem.rss / 1048576).toFixed(1),
+      heapMB: +(mem.heapUsed / 1048576).toFixed(1),
+      cpuMs: Math.round((cpu.user + cpu.system) / 1000),
+    };
+  });
+  app.get('/rooms', { config: { rateLimit: false } }, async () => ({ rooms: rooms.list(), capacity: env.MAX_PLAYERS_PER_ROOM }));
 
   app.get(
     '/ws',
     {
       websocket: true,
       // limit connection attempts per IP; browsers must come from an allowed origin
-      config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+      config: { rateLimit: { max: env.WS_CONNECTS_PER_MINUTE, timeWindow: '1 minute' } },
       preValidation: async (req, reply) => {
         if (!originAllowed(req.headers.origin)) return reply.code(403).send({ error: 'origin not allowed' });
       },
