@@ -1,15 +1,16 @@
 # Speaker's Garage
 
-A stylized 3D beach world in the browser where players meet, walk around together, chat and talk by
-voice with whoever is standing near them. Everything you see (terrain, water, props, characters) is built
-procedurally in code. It also runs fully offline as a single-player game.
+Hang out in a shared world and talk to whoever is nearby. A stylized 3D world in the browser (two maps:
+**Beach** and **Vinland**) where players meet, walk around together, chat and talk by proximity voice.
+Everything you see (terrain, water, props, characters and their clothes) is built procedurally in code.
+It also runs fully offline as a single-player game.
 
 **Monorepo (pnpm + Turborepo)**
 
 | Package | What |
 |---|---|
 | `apps/web` | the client: Vite + React 18 + TypeScript, three.js via React Three Fiber, Zustand, Tailwind |
-| `apps/server` | the authoritative game server: Fastify 5, `@fastify/websocket`, zod, pino |
+| `apps/server` | the authoritative game server: Fastify 5, `@fastify/websocket`, zod, pino; in production it also serves the built web app (one port) |
 | `packages/shared` | pure TypeScript shared by both: protocol, zod schemas, the movement simulation, collision, map data |
 | `packages/config` | the one tsconfig, ESLint and Prettier config |
 | `infra/` | coturn (TURN/STUN) for voice across networks, docker-compose |
@@ -24,14 +25,31 @@ pnpm dev          # game server (tsx watch, port 8787) + web app (Vite, http://l
 ```
 
 Open http://localhost:5173 in two browser windows, pick a name, keep **Online** and the same room, and
-enter. The web dev server proxies `/ws` and `/api` to the game server, so there is nothing else to set up.
-Without the server (or with **Offline** chosen), the game runs single-player exactly as before.
+enter. The Vite dev server (hot reload) proxies `/ws`, `/rooms` and `/health` to the game server, so there
+is nothing else to set up. Without the server (or with **Offline** chosen), the game runs single-player.
+
+### Production build on one port
 
 ```bash
-pnpm build        # everything (turbo, cached): shared (tsup) -> server bundle + web bundle
+pnpm build        # shared -> web (Vite) -> server (tsup); the server's build waits for the web build
+pnpm start        # the compiled server on http://localhost:8787: website + API + WebSocket
+```
+
+One process serves everything: the site from `apps/web/dist` (hashed `/assets/*` cached for a year as
+`immutable`, `index.html` and the manifest `no-cache`, precompressed `.br`/`.gz` served when accepted),
+client-side routes and deep links get `index.html`, unknown files and API paths get a real 404, and the
+WebSocket is `/ws` on the same origin (the client derives `ws://` or `wss://` from the page). Security
+headers: a strict CSP (`script-src 'self'`, `connect-src 'self' ws: wss:`, `media-src 'self' blob:`,
+`img-src 'self' data: blob:`, no `unsafe-eval`/`unsafe-inline` scripts) and `Permissions-Policy:
+microphone=(self)`. Set `WEB_DIST_PATH` to serve the site from elsewhere; in production the server refuses
+to start if the build is missing (`SERVE_WEB=off` runs the API only).
+
+```bash
+pnpm build        # everything (turbo, cached)
 pnpm typecheck
 pnpm lint         # zero warnings allowed
-pnpm test         # unit tests (shared), server integration tests
+pnpm test         # unit tests (shared, web), server integration tests (incl. static serving)
+pnpm test:fit     # avatar poke-through test: 600 outfit combinations (see "Avatar fit")
 pnpm format       # Prettier
 ```
 
@@ -40,6 +58,20 @@ Docker is only needed for voice between different networks: `docker compose -f i
 **Controls:** WASD / arrows move (relative to the camera), Shift runs, click/tap to walk, right-drag or Q/E
 rotates the camera, wheel/pinch zooms, F / Space / Enter interacts. **T** chat, **1 2 3** wave / dance /
 sit, **M** mute, hold **V** push-to-talk (when enabled), **right-click a player** for volume / mute / block.
+
+### Voice: on by default
+
+Entering an online room joins voice automatically. The **Enter the garage** click is the user gesture
+browsers require: in that click the app unlocks audio and asks for the microphone (the landing page shows
+"Your browser will ask to use your microphone"; nothing is requested on page load). You join with the
+microphone **live**; untick **Join with microphone on** (remembered) to join muted, and the microphone only
+opens on your first unmute. The HUD always shows the microphone state (red **Mic live**, **Muted**, or
+**No mic · listening**); **M** toggles mute. If permission is denied or there is no microphone you still
+enter and hear everyone (listen-only), with a banner and a **Retry microphone** button. If the browser
+still blocks audio, a **Click to enable sound** button appears.
+
+Browsers only allow the microphone on **HTTPS** pages (or `localhost`): deploy behind TLS, and see below
+for phones on your Wi-Fi.
 
 ## Architecture
 
@@ -119,17 +151,21 @@ Browsers only allow the microphone on **HTTPS** pages (or `localhost`). For a ph
 
 ## Deployment outline
 
-- **Server:** `docker build -f apps/server/Dockerfile -t speakers-garage .` (multi-stage, non-root,
-  healthcheck on `/health`). Environment: `PORT`, `ALLOWED_ORIGINS` (the web app's origin),
-  `TICK_RATE`, `MAX_PLAYERS_PER_ROOM`, `AOI_RADIUS`, `TURN_URLS`, `TURN_SECRET`, `TURN_TTL_SECONDS`
-  (all in `.env.example`). Put it behind a TLS proxy (Caddy, nginx, a cloud load balancer) so clients use
-  `wss://`. WebSockets need the proxy's upgrade support and idle timeouts above 30 s.
-- **Web app:** `pnpm --filter @speakersgarage/web build` and host `apps/web/dist` on any static host or CDN
-  (it already contains `.gz` and `.br` files). Build it with `VITE_SERVER_URL=wss://game.example.com/ws`.
+- **One image, one port:** `docker build -f apps/server/Dockerfile -t speakers-garage .` then
+  `docker run -p 8787:8787 speakers-garage` and open http://localhost:8787. The image holds the server bundle
+  and the built site (multi-stage, non-root, healthcheck on `/health`). Environment: `PORT`,
+  `TICK_RATE`, `MAX_PLAYERS_PER_ROOM`, `AOI_RADIUS`, `TURN_URLS`, `TURN_SECRET`, `TURN_TTL_SECONDS`,
+  `WEB_DIST_PATH`, `SERVE_WEB`, and `ALLOWED_ORIGINS` only if *other* origins must reach the API (the site's
+  own origin is always allowed). All in `.env.example`.
+- **TLS:** put it behind a TLS proxy (Caddy, nginx, a cloud load balancer) so the page is HTTPS (needed for the
+  microphone) and the socket is `wss://` automatically. WebSockets need the proxy's upgrade support and idle
+  timeouts above 30 s.
+- **Separate static hosting (optional):** host `apps/web/dist` on a CDN and build it with
+  `VITE_WS_URL=wss://game.example.com/ws`; add the site's origin to `ALLOWED_ORIGINS` and set `SERVE_WEB=off`.
 - **TURN:** coturn on a small VM with a public IP (`infra/docker-compose.yml`, `infra/coturn/turnserver.conf`).
   Open **3478/udp+tcp**, **5349/tcp** (TLS) and the relay range **49160-49400/udp**. Use the same secret as
   the server's `TURN_SECRET`, set `external-ip`, and add a certificate for `turns:`.
-- `docker compose -f infra/docker-compose.yml --profile server up` runs server + coturn on one machine.
+- `docker compose -f infra/docker-compose.yml --profile server up` runs the app (site + API + WebSocket) and coturn on one machine.
 
 ## Scaling path (not implemented)
 

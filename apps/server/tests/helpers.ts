@@ -18,7 +18,7 @@ import { loadEnv } from '../src/env';
 import type { Transport } from '../src/rooms/ServerPlayer';
 
 export async function startServer(extra: Record<string, string> = {}) {
-  const env = loadEnv({ NODE_ENV: 'test', LOG_LEVEL: 'silent', PORT: '0', HOST: '127.0.0.1', ...extra });
+  const env = loadEnv({ NODE_ENV: 'test', LOG_LEVEL: 'silent', PORT: '0', HOST: '127.0.0.1', SERVE_WEB: 'off', ...extra });
   const { app, rooms } = await buildApp({ env });
   await app.listen({ host: '127.0.0.1', port: 0 });
   const addr = app.server.address();

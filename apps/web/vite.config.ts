@@ -45,9 +45,11 @@ const vendorGroups = {
 
 function gameProxy() {
   const target = process.env.GAME_SERVER ?? 'http://127.0.0.1:8787';
+  // the same paths the production server answers on its single port
   return {
     '/ws': { target: target.replace(/^http/, 'ws'), ws: true },
-    '/api': { target, rewrite: (p: string) => p.replace(/^\/api/, '') },
+    '/rooms': { target },
+    '/health': { target },
   };
 }
 

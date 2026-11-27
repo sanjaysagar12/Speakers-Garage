@@ -1,7 +1,7 @@
 # Local / single-VM infrastructure.
 #
 #   docker compose -f infra/docker-compose.yml up coturn                 # TURN/STUN only (voice across networks)
-#   docker compose -f infra/docker-compose.yml --profile server up       # game server + TURN
+#   docker compose -f infra/docker-compose.yml --profile server up       # the app (site + API + WebSocket on one port) + TURN
 #
 # coturn uses host networking: a TURN server needs a large UDP port range, and Docker's port mapping of
 # hundreds of UDP ports is slow and breaks the relayed addresses. Ports used: 3478 (udp+tcp), 5349 (tcp,
@@ -26,7 +26,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8787
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173}
+      # the site is served by the same process: its own origin is always allowed; add others here if needed
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
       TURN_URLS: ${TURN_URLS:-turn:127.0.0.1:3478?transport=udp,turn:127.0.0.1:3478?transport=tcp}
       TURN_SECRET: ${TURN_SECRET:-CHANGE_ME_LONG_RANDOM_SECRET}
     depends_on: [coturn]

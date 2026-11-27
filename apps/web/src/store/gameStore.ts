@@ -1,4 +1,5 @@
 import { createStore } from 'zustand/vanilla';
+import { roomFromPath } from '../game/net/endpoints';
 import { KEYS } from '../storage';
 import type { AvatarConfig, DialogContent, NearbyInteraction } from '../types';
 import { DEFAULT_AVATAR, sanitizeAvatar } from '@speakersgarage/shared';
@@ -161,6 +162,14 @@ function persist(s: Pick<GameState, 'name' | 'avatar' | 'mapId' | 'online' | 'ro
 }
 
 const initial = loadProfile();
+// a deep link (/room/abc) chooses the room
+{
+  const linked = roomFromPath();
+  if (linked) {
+    initial.roomId = linked;
+    initial.online = true;
+  }
+}
 
 /** Blocked players last for the browser session (their ids are per room, so this is per tab). */
 function loadBlocked(): number[] {

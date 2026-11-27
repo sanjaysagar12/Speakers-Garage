@@ -12,6 +12,8 @@ import { JoinError, Room } from './rooms/Room';
 import type { ServerPlayer, Transport } from './rooms/ServerPlayer';
 import { MemoryPlayerStore, type PlayerStore } from './store/PlayerStore';
 import { iceServersFor } from './voice/turn';
+import { CSP_DIRECTIVES, PERMISSIONS_POLICY, registerWeb, resolveWebDist } from './web';
+import compress from '@fastify/compress';
 
 export interface AppDeps {
   env: Env;
@@ -47,10 +49,24 @@ export async function buildApp({ env, store = new MemoryPlayerStore() }: AppDeps
 
   // development: also accept this machine and private-network origins (phones on the same Wi-Fi)
   const PRIVATE = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/;
-  const originAllowed = (origin: string | undefined) =>
-    !origin || env.ALLOWED_ORIGINS.includes(origin) || env.ALLOWED_ORIGINS.includes('*') || (env.NODE_ENV === 'development' && PRIVATE.test(origin));
+  const originAllowed = (origin: string | undefined, host?: string) =>
+    !origin ||
+    env.ALLOWED_ORIGINS.includes(origin) ||
+    env.ALLOWED_ORIGINS.includes('*') ||
+    (env.NODE_ENV === 'development' && PRIVATE.test(origin)) ||
+    // same origin: the page this server served (single-port deployment)
+    (!!host && (origin === `https://${host}` || origin === `http://${host}`));
 
-  await app.register(helmet, { contentSecurityPolicy: false });
+  const webDist = resolveWebDist(env);
+  await app.register(helmet, {
+    contentSecurityPolicy: { useDefaults: false, directives: CSP_DIRECTIVES },
+    // the page loads nothing cross-origin; keep the defaults for the rest
+    crossOriginEmbedderPolicy: false,
+  });
+  app.addHook('onSend', async (_req, reply) => {
+    reply.header('permissions-policy', PERMISSIONS_POLICY);
+  });
+  await app.register(compress, { global: true, encodings: ['br', 'gzip'], threshold: 1024 });
   await app.register(cors, { origin: (origin, cb) => cb(null, originAllowed(origin)) });
   await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
   await app.register(websocket, { options: { maxPayload: NET.maxMessageBytes, perMessageDeflate: false } });
@@ -77,7 +93,7 @@ export async function buildApp({ env, store = new MemoryPlayerStore() }: AppDeps
       // limit connection attempts per IP; browsers must come from an allowed origin
       config: { rateLimit: { max: env.WS_CONNECTS_PER_MINUTE, timeWindow: '1 minute' } },
       preValidation: async (req, reply) => {
-        if (!originAllowed(req.headers.origin)) return reply.code(403).send({ error: 'origin not allowed' });
+        if (!originAllowed(req.headers.origin, req.headers.host)) return reply.code(403).send({ error: 'origin not allowed' });
       },
     },
     (ws, req) => {
@@ -173,6 +189,13 @@ export async function buildApp({ env, store = new MemoryPlayerStore() }: AppDeps
       ws.on('error', (e) => app.log.warn({ err: e.message }, 'socket error'));
     },
   );
+
+  if (webDist) {
+    await registerWeb(app, webDist);
+    app.log.info({ dir: webDist }, 'serving the web app');
+  } else {
+    app.setNotFoundHandler((req, reply) => reply.code(404).send({ error: 'not found', path: req.url.split('?')[0] }));
+  }
 
   return { app, rooms };
 }

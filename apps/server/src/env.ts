@@ -19,6 +19,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().min(0).max(65535).default(8787),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   /** browser origins allowed to open the WebSocket and call the HTTP API */
+  /** extra browser origins allowed to open the WebSocket and call the API (the app's own origin always is) */
   ALLOWED_ORIGINS: list('http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173'),
   TICK_RATE: z.coerce.number().int().min(5).max(60).default(NET.tickRate),
   MAX_PLAYERS_PER_ROOM: z.coerce.number().int().min(1).max(500).default(NET.maxPlayersPerRoom),
@@ -34,6 +35,10 @@ const envSchema = z.object({
   /** coturn static-auth-secret (use-auth-secret): short-lived credentials are derived from it */
   TURN_SECRET: z.string().default(''),
   TURN_TTL_SECONDS: z.coerce.number().int().min(60).max(86_400).default(3600),
+  /** the built web app (folder with index.html); default apps/web/dist in the monorepo */
+  WEB_DIST_PATH: z.string().optional(),
+  /** serve the web app: auto = if it exists (required in production), on = required, off = API only */
+  SERVE_WEB: z.enum(['auto', 'on', 'off']).default('auto'),
 });
 
 export type Env = z.infer<typeof envSchema>;
