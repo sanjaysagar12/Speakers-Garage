@@ -21,3 +21,7 @@ coverage
 **/dist
 mp-check
 voice-check
+
+# local deploy state and secrets
+.vercel
+.env*
