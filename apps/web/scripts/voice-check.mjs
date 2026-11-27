@@ -2,11 +2,14 @@
 //
 //   node scripts/voice-check.mjs [--out voice-check]
 //
-// A and B join one room next to each other and click "Join voice". Checks:
+// A and B enter one room next to each other; voice joins by itself on "Enter" (no autoplay override:
+// the Enter click must unlock audio). Checks:
+//   0. both are in voice with the microphone live, audio running, without clicking anything else
 //   1. a peer connection comes up (A has B as a voice peer, state connected)
 //   2. speaking: B's fake mic plays tone bursts; A's analysis of B's stream marks B as speaking
 //   3. mute: B presses M; B's mic is not live and A stops seeing B speak
 //   4. distance: B runs away; beyond the disconnect radius (15 m) the peer is closed on both sides
+//   5. denied: C's browser refuses the microphone; C still enters, joins listen-only, sees the banner
 // Screenshots are saved at each step. The fake mic is a generated WAV (tone bursts), so "speech" is
 // deterministic.
 import { spawn } from 'node:child_process';
@@ -78,7 +81,7 @@ for (let i = 0; i < 100; i++) {
   }
   await new Promise((r) => setTimeout(r, 100));
 }
-const vite = await createServer({ server: { port: 5199, host: '127.0.0.1', strictPort: true }, logLevel: 'error' });
+const vite = await createServer({ server: { port: 5197, host: '127.0.0.1', strictPort: true }, logLevel: 'error' });
 await vite.listen();
 const url = vite.resolvedUrls.local[0];
 
@@ -90,12 +93,13 @@ const browser = await chromium.launch({
     '--use-fake-device-for-media-stream',
     '--use-fake-ui-for-media-stream',
     `--use-file-for-fake-audio-capture=${wav}`,
-    '--autoplay-policy=no-user-gesture-required',
   ],
 });
+// a browser that refuses the microphone prompt
+const denyBrowser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--use-fake-device-for-media-stream', '--deny-permission-prompts'] });
 const errors = [];
-async function player(name) {
-  const ctx = await browser.newContext({ viewport: { width: 760, height: 460 }, permissions: ['microphone'] });
+async function player(name, b = browser) {
+  const ctx = await b.newContext({ viewport: { width: 760, height: 460 }, permissions: b === browser ? ['microphone'] : [] });
   const page = await ctx.newPage();
   page.setDefaultTimeout(300000);
   page.on('pageerror', (e) => errors.push(`${name}: ${e.message}`));
@@ -124,13 +128,24 @@ console.log(`A and B online, ${await dist()} m apart`);
 const step = (s) => console.log(`- ${s}`);
 const result = {};
 
-await A.getByRole('button', { name: /Join voice/ }).click();
-await B.getByRole('button', { name: /Join voice/ }).click();
-await A.waitForFunction(() => window.__store.getState().voice.joined, null, { timeout: 30000 });
-await B.waitForFunction(() => window.__store.getState().voice.joined, null, { timeout: 30000 });
-step('both joined voice (microphone granted)');
+for (const P of [A, B]) await P.waitForFunction(() => window.__store.getState().voice.joined && window.__store.getState().voice.mic === 'live', null, { timeout: 60000 });
+result.autoJoined = true;
+result.soundBlocked = await A.evaluate(() => window.__store.getState().voice.soundBlocked);
+result.indicatorA = await A.locator('[data-mic]').getAttribute('data-mic');
+step(`both joined voice on Enter with the mic live (indicator "${result.indicatorA}", sound blocked: ${result.soundBlocked})`);
 
 // 1. connection
+if (process.env.VOICE_DEBUG) {
+  await A.waitForTimeout(8000);
+  for (const [n, P] of [['A', A], ['B', B]])
+    console.log(
+      n,
+      await P.evaluate(() => {
+        const v = window.__voice;
+        return JSON.stringify({ peers: [...v.peers.keys()], retry: [...v.retryAfter], selfId: v.opts.selfId(), me: v.opts.selfPos(), maxPeers: v.opts.maxPeers, timers: v.timers.length, remotes: window.__game.remotes?.() });
+      }),
+    );
+}
 const t0 = Date.now();
 await A.waitForFunction((id) => window.__store.getState().voice.peers.some((p) => p.id === id && p.quality !== 'connecting'), bId, { timeout: 60000 });
 result.connectMs = Date.now() - t0;
@@ -160,25 +175,33 @@ step(`B muted: A saw B speaking in ${speakingAfterMute}/10 samples afterwards; s
 await B.keyboard.press('m');
 
 // 4. distance: B runs away until the peer drops
-await B.evaluate(() => window.__game.setYaw(0));
-await B.keyboard.down('Shift');
-await B.keyboard.down('w');
 let dropped = false;
-for (let i = 0; i < 40 && !dropped; i++) {
+// walk away by clicking far points on screen (the click-to-walk path goes around palms and umbrellas)
+const targets = [[300, 120], [80, 250], [520, 380], [300, 120], [700, 300], [80, 250]];
+for (let i = 0; i < 72 && !dropped; i++) {
+  if (i % 12 === 0) await B.mouse.click(...targets[(i / 12) % targets.length]);
   await B.waitForTimeout(500);
   dropped = await A.evaluate((id) => !window.__store.getState().voice.peers.some((p) => p.id === id), bId);
   if (dropped) result.dropDistance = await dist();
 }
-await B.keyboard.up('w');
-await B.keyboard.up('Shift');
 result.droppedWhenFar = dropped;
+result.distanceAfterRun = await dist();
 result.bPeersAfter = await B.evaluate(() => window.__store.getState().voice.peers.length);
 await A.screenshot({ path: `${out}/3-a-after-b-left.png` });
 step(`after running away: dropped=${dropped} at ${result.dropDistance} m (B has ${result.bPeersAfter} peers)`);
+// 5. denied microphone: listen-only, banner, still in the world and in voice
+const C = await player('Cid', denyBrowser);
+await C.waitForFunction(() => window.__store.getState().voice.joined && window.__store.getState().voice.mic === 'unavailable', null, { timeout: 60000 });
+result.deniedIndicator = await C.locator('[data-mic]').getAttribute('data-mic');
+result.deniedBanner = await C.getByTestId('mic-banner').innerText();
+result.deniedInWorld = await C.evaluate(() => window.__store.getState().phase === 'playing' && window.__game.net().status === 'online');
+await C.screenshot({ path: `${out}/4-c-denied-listen-only.png` });
+step(`denied: indicator "${result.deniedIndicator}", in world ${result.deniedInWorld}, banner "${result.deniedBanner.replace(/\n/g, ' ')}"`);
 result.errors = [...new Set(errors)];
 fs.writeFileSync(`${out}/result.json`, JSON.stringify(result, null, 2));
 console.log(JSON.stringify(result, null, 2));
 await browser.close();
+await denyBrowser.close();
 await vite.close();
 killServer();
 process.exit(errors.length ? 1 : 0);

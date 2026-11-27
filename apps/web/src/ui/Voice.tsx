@@ -11,8 +11,9 @@ const isTyping = (e: KeyboardEvent) => {
 };
 
 /**
- * Voice controls. "Join voice" is the only thing that asks for the microphone. While joined: a clear
- * "mic live" indicator, mute (M), deafen, push-to-talk (hold V), device choice, connection quality.
+ * Voice controls. Voice joins on its own when entering an online room (see voice.ts). A microphone
+ * indicator is always shown (live / muted / unavailable), with mute (M), deafen, push-to-talk (hold V),
+ * device choice and connection quality. Without a microphone: a non-blocking banner and "Retry microphone".
  */
 export const VoicePanel = memo(function VoicePanel() {
   const online = useGameStore((s) => s.net.status === 'online');
@@ -24,6 +25,9 @@ export const VoicePanel = memo(function VoicePanel() {
       deafened: s.voice.deafened,
       ptt: s.voice.ptt,
       micLive: s.voice.micLive,
+      mic: s.voice.mic,
+      micError: s.voice.micError,
+      soundBlocked: s.voice.soundBlocked,
       speaking: s.voice.speaking,
       error: s.voice.error,
       peers: s.voice.peers,
@@ -61,8 +65,8 @@ export const VoicePanel = memo(function VoicePanel() {
   if (!v.joined)
     return (
       <div className="pointer-events-auto flex flex-col items-start gap-1">
-        <button className={btn} disabled={v.joining} onClick={() => void voice.join()} title="Talk to people near you (asks for your microphone)">
-          🎙 {v.joining ? 'Starting…' : 'Join voice'}
+        <button className={btn} disabled={v.joining} onClick={() => void voice.join()} title="Talk to people near you">
+          🎙 {v.joining ? 'Connecting voice…' : 'Join voice'}
         </button>
         {v.error && <p className="glass max-w-xs rounded-xl px-2 py-1 text-xs text-red-700" role="alert">{v.error}</p>}
       </div>
@@ -71,18 +75,21 @@ export const VoicePanel = memo(function VoicePanel() {
   return (
     <div className="pointer-events-auto flex flex-col items-start gap-1">
       <div className="flex flex-wrap items-center gap-1">
-        {/* the live-mic indicator: always visible while the microphone sends */}
+        {/* the microphone indicator: always visible; red while the microphone sends */}
         <span
-          className={`flex h-9 items-center gap-1 rounded-full px-3 text-sm font-bold shadow ${v.micLive ? 'bg-red-600 text-white' : 'glass text-bark/60'}`}
+          className={`flex h-9 items-center gap-1 rounded-full px-3 text-sm font-bold shadow ${v.mic === 'live' ? 'bg-red-600 text-white' : v.mic === 'unavailable' ? 'glass text-amber-800' : 'glass text-bark/70'}`}
           role="status"
           aria-live="polite"
+          data-mic={v.mic}
         >
-          <span className={`h-2.5 w-2.5 rounded-full ${v.micLive ? (v.speaking ? 'animate-pulse bg-white' : 'bg-white/70') : 'bg-bark/40'}`} />
-          {v.micLive ? 'Mic live' : v.ptt ? 'Hold V to talk' : 'Mic off'}
+          <span className={`h-2.5 w-2.5 rounded-full ${v.mic === 'live' ? (v.speaking ? 'animate-pulse bg-white' : 'bg-white/70') : v.mic === 'unavailable' ? 'bg-amber-600' : 'bg-bark/40'}`} />
+          {v.mic === 'live' ? 'Mic live' : v.mic === 'unavailable' ? 'No mic · listening' : v.ptt ? 'Hold V to talk' : 'Muted'}
         </span>
-        <button className={btn} onClick={() => voice.toggleMute()} aria-pressed={v.muted} title="Mute (M)">
-          {v.muted ? '🔇 Unmute' : '🎙 Mute'}
-        </button>
+        {v.mic !== 'unavailable' && (
+          <button className={btn} onClick={() => voice.toggleMute()} aria-pressed={v.muted} title="Mute (M)">
+            {v.muted ? '🔇 Unmute' : '🎙 Mute'} <kbd className="rounded bg-bark/10 px-1 text-[10px]">M</kbd>
+          </button>
+        )}
         <button className={btn} onClick={() => voice.toggleDeafen()} aria-pressed={v.deafened} title="Deafen: hear nobody (also mutes you)">
           {v.deafened ? '🔈 Undeafen' : '🎧 Deafen'}
         </button>
@@ -93,6 +100,19 @@ export const VoicePanel = memo(function VoicePanel() {
           {v.peers.length} nearby{poor ? ' · poor connection' : ''}
         </span>
       </div>
+      {v.mic === 'unavailable' && (
+        <div className="glass flex max-w-sm items-center gap-2 rounded-2xl px-3 py-2 text-xs text-bark shadow" role="alert" data-testid="mic-banner">
+          <span className="flex-1">{v.micError ?? 'No microphone.'}</span>
+          <button className="shrink-0 rounded-full bg-moss px-3 py-1 font-bold text-white" onClick={() => void voice.retryMic()}>
+            Retry microphone
+          </button>
+        </div>
+      )}
+      {v.soundBlocked && (
+        <button className="glass rounded-full px-3 py-1.5 text-sm font-bold text-pine shadow" onClick={() => void voice.unlockSound()} data-testid="enable-sound">
+          🔈 Click to enable sound
+        </button>
+      )}
       {open && (
         <div className="glass w-72 space-y-2 rounded-2xl p-3 text-sm text-bark shadow-xl">
           <label className="flex items-center gap-2">

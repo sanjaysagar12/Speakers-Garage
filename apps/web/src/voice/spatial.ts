@@ -17,8 +17,9 @@ export class SpatialVoice {
   private listener = { x: 0, z: 0, yaw: 0 };
   deafened = false;
 
-  constructor() {
-    this.ctx = new AudioContext({ latencyHint: 'interactive' });
+  /** `ctx`: one created inside the user's click (prime.ts), so it can start without another gesture */
+  constructor(ctx?: AudioContext) {
+    this.ctx = ctx ?? new AudioContext({ latencyHint: 'interactive' });
     this.master = this.ctx.createGain();
     this.master.connect(this.ctx.destination);
   }

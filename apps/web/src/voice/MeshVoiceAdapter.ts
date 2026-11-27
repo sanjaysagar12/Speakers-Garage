@@ -2,7 +2,8 @@ import { VOICE, type IceServerInfo, type ServerMessage } from '@speakersgarage/s
 import type { NetworkAdapter } from '../game/net/NetworkAdapter';
 import { remotes } from '../game/net/entities';
 import { SpatialVoice, Vad } from './spatial';
-import { VoiceError, type VoiceAdapter } from './VoiceAdapter';
+import { VoiceError, type MicState, type VoiceAdapter, type VoiceConnectOptions } from './VoiceAdapter';
+import { MIC_CONSTRAINTS } from './prime';
 
 export interface MeshOptions {
   /** simultaneous peers (nearest first): 6 on Medium/High, 3-4 on Low/Ultra-Low */
@@ -90,6 +91,12 @@ export class MeshVoiceAdapter implements VoiceAdapter {
   private speakingSent = false;
   private lastStateSent = 0;
   private inputId: string | undefined;
+  /** why there is no microphone (listen-only), if there is none */
+  micError: VoiceError | null = null;
+  /** the AudioContext could not start without another click (autoplay policy) */
+  get soundBlocked(): boolean {
+    return !!this.spatial && this.spatial.ctx.state !== 'running';
+  }
   /** called when anything the HUD shows changed */
   onChange: (() => void) | null = null;
 
@@ -100,12 +107,23 @@ export class MeshVoiceAdapter implements VoiceAdapter {
 
   // ------------------------------------------------------------------ VoiceAdapter
 
-  async connect(): Promise<void> {
-    if (!window.isSecureContext) throw new VoiceError('insecure', 'Voice needs HTTPS (or localhost) for microphone access.');
-    if (!navigator.mediaDevices?.getUserMedia || !window.RTCPeerConnection) throw new VoiceError('unsupported', 'This browser does not support voice chat.');
-    await this.openMic(this.inputId);
-    this.spatial = new SpatialVoice();
-    await this.spatial.resume();
+  async connect(_room = '', opts: VoiceConnectOptions = {}): Promise<void> {
+    if (!window.RTCPeerConnection) throw new VoiceError('unsupported', 'This browser does not support voice chat.');
+    this.spatial = new SpatialVoice(opts.ctx ?? undefined);
+    void this.spatial.resume().catch(() => undefined);
+    this.spatial.ctx.onstatechange = () => this.onChange?.();
+    if (opts.micOn === false) {
+      // join muted without touching the microphone: it opens on the first unmute
+      this.muted = true;
+      opts.mic?.then((st) => st.getTracks().forEach((t) => t.stop())).catch(() => undefined);
+    } else {
+      try {
+        await this.openMic(this.inputId, opts.mic ?? undefined);
+      } catch (e) {
+        // never block voice on the microphone: listen-only, with the reason for the HUD
+        this.micError = e instanceof VoiceError ? e : new VoiceError('failed', 'Could not open the microphone.');
+      }
+    }
     this.attachLocalAnalyser();
     this.offEvent = this.net.onEvent?.((m) => this.onServer(m)) ?? null;
     this.sendState(true);
@@ -115,7 +133,44 @@ export class MeshVoiceAdapter implements VoiceAdapter {
     this.timers.push(window.setInterval(() => void this.stats(), 2000));
   }
 
+  get micState(): MicState {
+    if (!this.track) return this.micError ? 'unavailable' : 'muted';
+    return this.track.enabled ? 'live' : 'muted';
+  }
+
+  /**
+   * Open the microphone now (Retry after a denial, or the first unmute after joining muted). Existing
+   * peer connections were negotiated receive-only, so they are re-made (they reconnect within ~0.25 s).
+   */
+  async enableMic(): Promise<void> {
+    if (this.track) return;
+    try {
+      await this.openMic(this.inputId);
+    } catch (e) {
+      this.micError = e instanceof VoiceError ? e : new VoiceError('failed', 'Could not open the microphone.');
+      this.onChange?.();
+      throw this.micError;
+    }
+    this.micError = null;
+    this.attachLocalAnalyser();
+    for (const id of [...this.peers.keys()]) this.closePeer(id, true);
+    this.sendState(true);
+    this.onChange?.();
+  }
+
+  /** resume audio after the autoplay policy blocked it (call from a click) */
+  async unlockSound(): Promise<void> {
+    await this.spatial?.resume();
+    this.onChange?.();
+  }
+
   setLocalMute(muted: boolean): void {
+    // the first unmute after joining muted opens the microphone (this runs from a key press or click)
+    if (!muted && !this.track && !this.micError) {
+      this.muted = false;
+      void this.enableMic().catch(() => undefined);
+      return;
+    }
     this.muted = muted;
     this.applyTrackEnabled();
     this.sendState(true);
@@ -209,15 +264,19 @@ export class MeshVoiceAdapter implements VoiceAdapter {
 
   // ------------------------------------------------------------------ microphone
 
-  private async openMic(deviceId?: string): Promise<void> {
+  private async openMic(deviceId?: string, primed?: Promise<MediaStream>): Promise<void> {
+    if (!window.isSecureContext) throw new VoiceError('insecure', 'The microphone needs HTTPS (or localhost). You can still listen.');
+    if (!primed && !navigator.mediaDevices?.getUserMedia) throw new VoiceError('unsupported', 'This browser cannot use a microphone here. You can still listen.');
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, ...(deviceId ? { deviceId: { exact: deviceId } } : {}) },
-        video: false,
-      });
+      this.stream = await (primed ??
+        navigator.mediaDevices.getUserMedia({
+          ...MIC_CONSTRAINTS,
+          audio: { ...(MIC_CONSTRAINTS.audio as MediaTrackConstraints), ...(deviceId ? { deviceId: { exact: deviceId } } : {}) },
+        }));
     } catch (e) {
       const name = (e as DOMException).name;
-      if (name === 'NotAllowedError' || name === 'SecurityError') throw new VoiceError('denied', 'Microphone access was denied. Allow it in the browser to use voice.');
+      // Chrome reports a blocked prompt as NotSupportedError in some modes; to the player it is the same thing
+      if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'NotSupportedError') throw new VoiceError('denied', 'Microphone access was denied. You can listen; allow the microphone in the browser and retry to talk.');
       if (name === 'NotFoundError' || name === 'OverconstrainedError' || name === 'NotReadableError') throw new VoiceError('no-device', 'No usable microphone was found.');
       throw new VoiceError('failed', `Could not open the microphone (${name}).`);
     }

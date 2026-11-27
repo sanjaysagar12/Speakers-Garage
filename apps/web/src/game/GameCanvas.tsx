@@ -13,6 +13,7 @@ import type { GameMap } from './maps/types';
 import { devLog } from '../util/devlog';
 import { session } from './net/session';
 import { voice } from '../voice/voice';
+import { releasePrimed } from '../voice/prime';
 
 /**
  * Hosts the R3F canvas. On entry: picks the starting tier in 'auto' mode (hardware hints + a ~1 s benchmark,
@@ -53,11 +54,18 @@ export function GameCanvas() {
             mapId = r.map;
             gameStore.getState().setMap(r.map);
           }
+          // voice joins on its own: the Enter click already primed the audio and asked for the microphone
+          if (r.offline) releasePrimed();
+          else void voice.autoJoin();
         } catch (e) {
+          releasePrimed();
           if (alive) setStage((s) => ({ ...s, error: (e as Error).message }));
           return;
         }
-      } else await session.start({ online: false, room: st.roomId, map: st.mapId });
+      } else {
+        releasePrimed();
+        await session.start({ online: false, room: st.roomId, map: st.mapId });
+      }
       if (!alive) return;
       setStage((s) => ({ ...s, label: 'Building the world…', progress: 0.7 }));
       // let the progress bar paint before the (synchronous) map build

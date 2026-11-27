@@ -24,6 +24,12 @@ export interface VoiceUi {
   ptt: boolean;
   /** the microphone is sending right now */
   micLive: boolean;
+  /** HUD indicator: live, muted (open but silent, or not opened yet), unavailable (listen-only) */
+  mic: 'live' | 'muted' | 'unavailable';
+  /** why the microphone is unavailable (denied, no device, no HTTPS) */
+  micError?: string;
+  /** the browser blocked audio until another click (autoplay policy) */
+  soundBlocked: boolean;
   speaking: boolean;
   error?: string;
   peers: Array<{ id: number; quality: 'good' | 'poor' | 'connecting' }>;
@@ -95,6 +101,9 @@ export interface GameState {
   closeDialog: () => void;
   setUi: (patch: Partial<GameState['ui']>) => void;
   setOnline: (online: boolean) => void;
+  /** join voice with the microphone on (landing checkbox, remembered) */
+  micOnJoin: boolean;
+  setMicOnJoin: (on: boolean) => void;
   setRoom: (room: string) => void;
   setNet: (patch: Partial<GameState['net']>) => void;
   addChat: (line: Omit<ChatLine, 'key' | 'at'>) => void;
@@ -110,6 +119,7 @@ interface Saved {
   mapId: string;
   qualityMode: QualityMode;
   fpsCap: 30 | 60;
+  micOnJoin: boolean;
 }
 
 const detectTouch = (): boolean => {
@@ -121,12 +131,12 @@ const detectTouch = (): boolean => {
 };
 
 function loadProfile(): Saved {
-  const fallback: Saved = { online: true, roomId: 'beach', name: '', avatar: { ...DEFAULT_AVATAR }, mapId: DEFAULT_MAP, qualityMode: 'auto', fpsCap: 60 };
+  const fallback: Saved = { online: true, roomId: 'beach', name: '', avatar: { ...DEFAULT_AVATAR }, mapId: DEFAULT_MAP, qualityMode: 'auto', fpsCap: 60, micOnJoin: true };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return fallback;
     // older saves stored an automatic default under `quality` (there was no setting); they start on auto
-    const p = JSON.parse(raw) as Partial<{ online: boolean; roomId: string; name: string; avatar: Record<string, unknown>; mapId: string; qualityMode: string; fpsCap: number }>;
+    const p = JSON.parse(raw) as Partial<{ online: boolean; roomId: string; name: string; avatar: Record<string, unknown>; mapId: string; qualityMode: string; fpsCap: number; micOnJoin: boolean }>;
     return {
       online: p.online !== false,
       roomId: typeof p.roomId === 'string' && /^[a-z0-9-]{1,24}$/.test(p.roomId) ? p.roomId : 'beach',
@@ -135,15 +145,16 @@ function loadProfile(): Saved {
       mapId: isMapId(p.mapId) ? p.mapId : DEFAULT_MAP,
       qualityMode: p.qualityMode === 'auto' || QUALITY_ORDER.includes(p.qualityMode as Quality) ? (p.qualityMode as QualityMode) : 'auto',
       fpsCap: p.fpsCap === 30 ? 30 : 60,
+      micOnJoin: p.micOnJoin !== false,
     };
   } catch {
     return fallback;
   }
 }
 
-function persist(s: Pick<GameState, 'name' | 'avatar' | 'mapId' | 'online' | 'roomId'> & { qualityMode: QualityMode; fpsCap: 30 | 60 }): void {
+function persist(s: Pick<GameState, 'name' | 'avatar' | 'mapId' | 'online' | 'roomId' | 'micOnJoin'> & { qualityMode: QualityMode; fpsCap: 30 | 60 }): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ name: s.name, avatar: s.avatar, mapId: s.mapId, online: s.online, roomId: s.roomId, qualityMode: s.qualityMode, fpsCap: s.fpsCap }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ name: s.name, avatar: s.avatar, mapId: s.mapId, online: s.online, roomId: s.roomId, qualityMode: s.qualityMode, fpsCap: s.fpsCap, micOnJoin: s.micOnJoin }));
   } catch {
     /* storage unavailable */
   }
@@ -171,7 +182,7 @@ export function saveBlocked(ids: number[]): void {
 export const gameStore = createStore<GameState>((set, get) => {
   const save = () => {
     const s = get();
-    persist({ name: s.name, avatar: s.avatar, mapId: s.mapId, online: s.online, roomId: s.roomId, qualityMode: s.ui.qualityMode, fpsCap: s.ui.fpsCap });
+    persist({ name: s.name, avatar: s.avatar, mapId: s.mapId, online: s.online, roomId: s.roomId, micOnJoin: s.micOnJoin, qualityMode: s.ui.qualityMode, fpsCap: s.ui.fpsCap });
   };
   return {
     phase: 'landing',
@@ -184,6 +195,7 @@ export const gameStore = createStore<GameState>((set, get) => {
     dialog: null,
     online: initial.online,
     roomId: initial.roomId,
+    micOnJoin: initial.micOnJoin,
     net: { status: 'offline', rtt: 0, players: [], selfId: -1 },
     chat: [],
     voice: {
@@ -193,6 +205,8 @@ export const gameStore = createStore<GameState>((set, get) => {
       deafened: false,
       ptt: false,
       micLive: false,
+      mic: 'muted',
+      soundBlocked: false,
       speaking: false,
       peers: [],
       inputs: [],
@@ -236,6 +250,10 @@ export const gameStore = createStore<GameState>((set, get) => {
     },
     setOnline: (online) => {
       set({ online });
+      save();
+    },
+    setMicOnJoin: (micOnJoin) => {
+      set({ micOnJoin });
       save();
     },
     setRoom: (room) => {
