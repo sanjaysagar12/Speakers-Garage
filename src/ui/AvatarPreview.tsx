@@ -7,6 +7,13 @@ import { Sun } from '../game/engine/Sun';
 import { toon } from '../game/materials/toon';
 import { PAL } from '../game/models/palette';
 import type { AvatarConfig } from '../types';
+import { useReleaseGpuOnUnmount } from '../game/util/releaseGpu';
+
+/** Top-level child of the Canvas: frees the GPU side of shared/cached materials when the preview unmounts. */
+function GpuScope({ children }: { children: React.ReactNode }) {
+  useReleaseGpuOnUnmount();
+  return <>{children}</>;
+}
 
 function Model({ avatar, yaw }: { avatar: AvatarConfig; yaw: number }) {
   const c = useMemo(() => new Character(avatar), []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -43,10 +50,12 @@ export function AvatarPreview({ avatar, yaw = 0.5, className }: { avatar: Avatar
   return (
     <div className={className ?? 'h-[250px] w-[190px]'} aria-label="Avatar preview">
       <Canvas flat shadows={{ type: PCFShadowMap }} dpr={[1, 2]} camera={{ fov: 30, position: [0, 1.9, 3.6] }} gl={{ alpha: true }}>
-        <Pad />
-        <Model avatar={avatar} yaw={yaw} />
-        <Sun target={target} extent={2} mapSize={512} />
-        <OrbitControls target={[0, 0.95, 0]} enablePan={false} enableZoom={false} minPolarAngle={0.8} maxPolarAngle={1.35} />
+        <GpuScope>
+          <Pad />
+          <Model avatar={avatar} yaw={yaw} />
+          <Sun target={target} extent={2} mapSize={512} />
+          <OrbitControls target={[0, 0.95, 0]} enablePan={false} enableZoom={false} minPolarAngle={0.8} maxPolarAngle={1.35} />
+        </GpuScope>
       </Canvas>
     </div>
   );

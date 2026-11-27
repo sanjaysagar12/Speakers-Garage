@@ -1,0 +1,66 @@
+{
+  "label": "baseline-desktop-med",
+  "quality": "med",
+  "throttle": 4,
+  "viewport": "desktop 1280x720",
+  "renderer": "SwiftShader (software GL, headless)",
+  "timeToInteractiveMs": 986,
+  "worldReadyMs": 15546,
+  "transferKB": {
+    "landing": 399,
+    "world": 0
+  },
+  "walk": {
+    "frames": 18,
+    "avgFps": 0.6,
+    "low1Fps": 0.3,
+    "avgFrameMs": 1813.1,
+    "p99FrameMs": 3216.5
+  },
+  "render": {
+    "calls": 1,
+    "triangles": 1,
+    "geometries": 181,
+    "textures": 19,
+    "programs": 32,
+    "callsMidWalk": 1
+  },
+  "heapAfterMB": 66.8,
+  "heapAtSeconds": 120,
+  "leak": [
+    {
+      "heapMB": 67.9,
+      "geometries": 167,
+      "textures": 19,
+      "programs": 31
+    },
+    {
+      "heapMB": 68.9,
+      "geometries": 167,
+      "textures": 19,
+      "programs": 30
+    },
+    {
+      "heapMB": 69.9,
+      "geometries": 173,
+      "textures": 19,
+      "programs": 31
+    },
+    {
+      "heapMB": 70.8,
+      "geometries": 169,
+      "textures": 19,
+      "programs": 30
+    },
+    {
+      "heapMB": 71.5,
+      "geometries": 178,
+      "textures": 19,
+      "programs": 31
+    }
+  ],
+  "errors": [
+    "Cannot read properties of undefined (reading 'toArray')",
+    "t.dispose is not a function"
+  ]
+}

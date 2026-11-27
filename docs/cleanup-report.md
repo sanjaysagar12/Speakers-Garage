@@ -12,7 +12,7 @@ map / interaction data formats are unchanged.
 | `phaser` dependency | Not imported anywhere since the 3D rewrite (`grep -r phaser src scripts` → nothing). | ~148 MB less `node_modules`, faster `npm ci` |
 | Generated `public/assets/*` (2D tileset, atlases, avatar sheets, `catalog.json`; 76 files) | Gitignored build outputs, never requested at runtime (the perf run saw 0 asset requests). Still regenerable with `npm run assets`. `dev`/`build` no longer run the asset generator. | Build output 10.6 MB → 0 MB of assets; faster `dev`/`build` start |
 | Joystick PNG references | The two PNGs no longer existed (broken images on touch devices); the joystick is now drawn with CSS. | Fixes a broken UI on touch |
-| Dead exports: `disposeToonCache`, `disposeSharedStructureMaterials`, `hashString`, `hairSwayWeight` / `HEAD_R` / `DEFAULT_AVATAR` re-exports | No references (knip + grep). | less code |
+| Dead exports: `disposeToonCache`, `disposeSharedStructureMaterials`, `hashString`, `hairSwayWeight` / `HEAD_R` / `DEFAULT_AVATAR` re-exports | No references (knip + grep). Note: the two `dispose*` helpers were never called, but the problem they were written for was real (cached materials kept every old renderer alive, a heap leak on each world re-entry). That is now fixed generically by `src/game/util/releaseGpu.ts`, which frees everything the scene used when a Canvas unmounts. | less code; leak fixed separately |
 | Module-internal helpers no longer exported (`inputDirection`, `swayDepth`, …) | Only used in their own file. | clearer API |
 
 ## Merged duplicates

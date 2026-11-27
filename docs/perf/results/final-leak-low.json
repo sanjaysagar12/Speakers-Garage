@@ -1,0 +1,63 @@
+{
+  "label": "final-leak-low",
+  "quality": "low",
+  "throttle": 1,
+  "viewport": "desktop 1280x720",
+  "renderer": "SwiftShader (software GL, headless)",
+  "timeToInteractiveMs": 176,
+  "worldReadyMs": 2910,
+  "transferKB": {
+    "landing": 289,
+    "world": 66
+  },
+  "walk": {
+    "frames": 122,
+    "avgFps": 4,
+    "low1Fps": 1.3,
+    "avgFrameMs": 248.4,
+    "p99FrameMs": 766.6
+  },
+  "render": {
+    "calls": 146,
+    "triangles": 299095,
+    "geometries": 109,
+    "textures": 4,
+    "programs": 26,
+    "callsMidWalk": 142
+  },
+  "heapAfterMB": 73.1,
+  "heapAtSeconds": 300,
+  "leak": [
+    {
+      "heapMB": 73.5,
+      "geometries": 101,
+      "textures": 4,
+      "programs": 25
+    },
+    {
+      "heapMB": 74,
+      "geometries": 99,
+      "textures": 4,
+      "programs": 25
+    },
+    {
+      "heapMB": 74.4,
+      "geometries": 103,
+      "textures": 4,
+      "programs": 25
+    },
+    {
+      "heapMB": 74.8,
+      "geometries": 97,
+      "textures": 4,
+      "programs": 25
+    },
+    {
+      "heapMB": 74.9,
+      "geometries": 102,
+      "textures": 4,
+      "programs": 25
+    }
+  ],
+  "errors": []
+}

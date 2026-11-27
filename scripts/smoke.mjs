@@ -45,7 +45,8 @@ step('wardrobe opened');
 await page.keyboard.press('Escape');
 for (const q of ['ultralow', 'low', 'med', 'high']) {
   await page.evaluate((m) => window.__store.getState().setUi({ qualityMode: m, quality: m }), q);
-  await page.waitForTimeout(2500);
+  // a tier switch rebuilds props and recompiles shaders: wait until the renderer is back to one render per frame
+  await page.waitForTimeout(8000);
   const info = await page.evaluate(() => window.__game.renderInfo());
   step(`tier ${q}: ${info.calls} calls, ${info.triangles} tris`);
 }

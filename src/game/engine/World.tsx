@@ -18,6 +18,7 @@ import { deckAt, standHeight } from '../maps/deck';
 import { useGameStore } from '../../store/useGameStore';
 import { RemotePlayers } from './Remote';
 import { AmbientAudio } from '../systems/AmbientAudio';
+import { useReleaseGpuOnUnmount } from '../util/releaseGpu';
 import { G } from '../materials/globals';
 import { QUALITY, type Quality } from '../config';
 import { gameBridge } from '../../store/bridge';
@@ -59,6 +60,9 @@ const DebugOverlay = import.meta.env.DEV ? lazy(() => import('./DebugOverlay').t
 /** The whole 3D world for one map. Everything below shares one WorldRuntime through context. */
 export function World({ map, quality }: { map: GameMap; quality: Quality }) {
   const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  // World is the Canvas's only child: frees GPU objects of cached materials/textures when leaving (leak fix)
+  useReleaseGpuOnUnmount();
   const q = QUALITY[quality];
   const debug = useGameStore((s) => s.ui.debug);
   const runtime = useMemo(() => {
@@ -101,6 +105,9 @@ export function World({ map, quality }: { map: GameMap; quality: Quality }) {
     frameStats.geometries = gl.info.memory.geometries;
     frameStats.textures = gl.info.memory.textures;
     frameStats.programs = gl.info.programs?.length ?? 0;
+    // renderer.render() calls since the last frame (scene + shadow + post passes count separately)
+    frameStats.renders = gl.info.render.frame - frameStats.lastFrame;
+    frameStats.lastFrame = gl.info.render.frame;
     gl.info.reset();
   }, -1);
 
@@ -109,6 +116,23 @@ export function World({ map, quality }: { map: GameMap; quality: Quality }) {
     if (!(import.meta.env.DEV || import.meta.env.VITE_PERF_HOOKS)) return;
     const api = {
       renderInfo: () => ({ ...frameStats }),
+      /** visible meshes per top-level scene child (tests) */
+      census: () => {
+        const out: Record<string, number> = { shadowCasters: 0 };
+        for (const c of scene.children) {
+          let n = 0;
+          c.traverseVisible((o) => {
+            if ((o as { isMesh?: boolean }).isMesh) {
+              n++;
+              if (o.castShadow) out.shadowCasters++;
+            }
+          });
+          const k = `${c.type}:${c.name || '-'}`;
+          out[k] = (out[k] ?? 0) + n;
+        }
+        out.shadowMapEnabled = gl.shadowMap.enabled ? 1 : 0;
+        return out;
+      },
       teleport: (x: number, z: number, facing: number) => {
         runtime.player.pos.set(x, standHeight(runtime.map, x, z), z);
         runtime.player.vel.set(0, 0, 0);
@@ -126,7 +150,7 @@ export function World({ map, quality }: { map: GameMap; quality: Quality }) {
     return () => {
       delete (window as unknown as { __game?: typeof api }).__game;
     };
-  }, [runtime, gl]);
+  }, [runtime, gl, scene]);
 
   return (
     <WorldContext.Provider value={runtime}>

@@ -1,0 +1,32 @@
+{
+  "label": "final-desktop-med-1x",
+  "quality": "med",
+  "throttle": 1,
+  "viewport": "desktop 1280x720",
+  "renderer": "SwiftShader (software GL, headless)",
+  "timeToInteractiveMs": 276,
+  "worldReadyMs": 5872,
+  "transferKB": {
+    "landing": 289,
+    "world": 66
+  },
+  "walk": {
+    "frames": 31,
+    "avgFps": 1,
+    "low1Fps": 0.3,
+    "avgFrameMs": 983.8,
+    "p99FrameMs": 2916.5
+  },
+  "render": {
+    "calls": 217,
+    "triangles": 362245,
+    "geometries": 134,
+    "textures": 20,
+    "programs": 34,
+    "callsMidWalk": 217
+  },
+  "heapAfterMB": 72.9,
+  "heapAtSeconds": 120,
+  "leak": null,
+  "errors": []
+}

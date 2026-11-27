@@ -1,0 +1,34 @@
+{
+  "label": "baseline-mobile-low-4x",
+  "quality": "low",
+  "throttle": 4,
+  "viewport": "mobile 412x860 @2.6",
+  "renderer": "SwiftShader (software GL, headless)",
+  "timeToInteractiveMs": 2007,
+  "worldReadyMs": 26283,
+  "transferKB": {
+    "landing": 399,
+    "world": 2
+  },
+  "walk": {
+    "frames": 57,
+    "avgFps": 1.9,
+    "low1Fps": 0.8,
+    "avgFrameMs": 534.5,
+    "p99FrameMs": 1233.3
+  },
+  "render": {
+    "calls": 197,
+    "triangles": 415278,
+    "geometries": 156,
+    "textures": 2,
+    "programs": 25,
+    "callsMidWalk": 197
+  },
+  "heapAfterMB": 66.2,
+  "heapAtSeconds": 120,
+  "leak": null,
+  "errors": [
+    "Cannot read properties of undefined (reading 'toArray')"
+  ]
+}

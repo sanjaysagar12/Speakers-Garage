@@ -53,7 +53,7 @@ page.on('pageerror', (e) => errors.push(e.message));
 const now = () => Date.now();
 const t0 = now();
 await page.goto(url);
-await page.waitForFunction(() => window.__store, null, { timeout: 600000 });
+(await page.waitForFunction(() => window.__store, null, { timeout: 600000 })).dispose();
 await page.waitForSelector('form button[type=submit]', { state: 'visible' });
 const tti = now() - t0;
 await page.waitForTimeout(3000);
@@ -62,7 +62,7 @@ await page.evaluate((q) => window.__store.getState().setUi({ quality: q, quality
 
 const t1 = now();
 await page.click('form button[type=submit]');
-await page.waitForFunction(() => window.__game, null, { timeout: 600000 });
+(await page.waitForFunction(() => window.__game, null, { timeout: 600000 })).dispose(); // a kept handle would pin the world
 // first rendered world frame
 await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 const worldReady = now() - t1;
@@ -120,7 +120,7 @@ if (leak) {
     await page.evaluate(() => window.__store.getState().leaveWorld());
     await page.waitForTimeout(2500);
     await page.evaluate(() => window.__store.getState().enterWorld());
-    await page.waitForFunction(() => window.__game, null, { timeout: 600000 });
+    (await page.waitForFunction(() => window.__game, null, { timeout: 600000 })).dispose(); // a kept handle would pin the world
     await page.waitForTimeout(5000);
     await cdp.send('HeapProfiler.collectGarbage');
     const h = await page.evaluate(() => +(performance.memory.usedJSHeapSize / 1048576).toFixed(1));
