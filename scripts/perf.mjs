@@ -58,7 +58,7 @@ await page.waitForSelector('form button[type=submit]', { state: 'visible' });
 const tti = now() - t0;
 await page.waitForTimeout(3000);
 const landingBytes = bytes;
-await page.evaluate((q) => window.__store.getState().setUi({ quality: q, hintOpen: false }), quality);
+await page.evaluate((q) => window.__store.getState().setUi({ quality: q, qualityMode: q, hintOpen: false }), quality);
 
 const t1 = now();
 await page.click('form button[type=submit]');

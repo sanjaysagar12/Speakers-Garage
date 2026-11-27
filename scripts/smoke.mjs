@@ -1,10 +1,21 @@
 // Smoke test: load -> enter world -> walk onto the pier -> open the wardrobe -> cycle quality tiers -> leave.
-//   node scripts/smoke.mjs        (dev server; prints errors and the auto-detected tier)
-import { createServer } from 'vite';
+//   node scripts/smoke.mjs              dev server
+//   node scripts/smoke.mjs --preview    production build (with test hooks) served by vite preview
+// Prints each step, the auto-detected tier and any page errors; exits 1 on errors.
+import { build, createServer, preview } from 'vite';
 import { chromium } from 'playwright';
 
-const server = await createServer({ server: { port: 5194, host: '127.0.0.1' }, logLevel: 'error' });
-await server.listen();
+const prod = process.argv.includes('--preview');
+let server;
+if (prod) {
+  process.env.VITE_PERF_HOOKS = '1';
+  await build({ logLevel: 'error', build: { outDir: '.perf-dist', emptyOutDir: true } });
+  server = await preview({ logLevel: 'error', build: { outDir: '.perf-dist' }, preview: { port: 5195, host: '127.0.0.1' } });
+} else {
+  server = await createServer({ server: { port: 5194, host: '127.0.0.1' }, logLevel: 'error' });
+  await server.listen();
+}
+console.log(prod ? 'production build (vite preview)' : 'dev server');
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage({ viewport: { width: 800, height: 500 } });
 page.setDefaultTimeout(300000);
@@ -44,5 +55,5 @@ step('left the world');
 const real = [...new Set(errors)].filter((e) => !/toArray/.test(e));
 console.log(real.length ? `ERRORS:\n${real.join('\n')}` : 'no errors (ignoring the known startup toArray warning)');
 await browser.close();
-await server.close();
+await (prod ? new Promise((r) => server.httpServer.close(r)) : server.close());
 process.exit(real.length ? 1 : 0);

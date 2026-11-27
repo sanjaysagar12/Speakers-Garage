@@ -29,15 +29,17 @@ function precompress(): Plugin {
 
 /**
  * Long-lived vendor chunks: they change rarely, so repeat visits hit the cache. Rolldown's native groups;
- * dependencies are NOT pulled in recursively, otherwise the r3f group swallows react-dom and three and
- * the landing page (which needs only react) would download all of them.
+ * dependencies are NOT pulled in recursively, otherwise a group can swallow react-dom and three and the
+ * landing page (which needs only react) would download all of them. Do not add a group for the R3F /
+ * postprocessing packages: with includeDependenciesRecursively:false Rolldown 1.3 emitted a broken import
+ * between that group and the world chunk ("_ is not a function" in production). Verify any change here
+ * with `npm run smoke -- --preview`, which tests the production build.
  */
 const vendorGroups = {
   includeDependenciesRecursively: false,
   groups: [
     { name: 'vendor-react', test: /node_modules[\\/](react|react-dom|scheduler|zustand|use-sync-external-store)[\\/]/ },
     { name: 'vendor-three', test: /node_modules[\\/]three[\\/]/ },
-    { name: 'vendor-r3f', test: /node_modules[\\/](@react-three|postprocessing|its-fine|suspend-react|react-reconciler|react-use-measure|three-stdlib|easystarjs|zustand\/vanilla)[\\/]/ },
   ],
 };
 
