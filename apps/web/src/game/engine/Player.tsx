@@ -5,7 +5,10 @@ import { Character } from '../models/character/Character';
 import { GAME_CONFIG } from '../config';
 import { deckAt, standHeight } from '@shoreline/shared';
 import { debugStats, useWorld } from './runtime';
-import { stepMovement } from '@shoreline/shared';
+import { NET, Predictor, STEP_DT, newPlayerSim, wrapAngle, type InputCommand } from '@shoreline/shared';
+import { session } from '../net/session';
+import { remotes } from '../net/entities';
+import { localEmote, setLocalEmote } from '../net/emotes';
 import { gameBridge } from '../../store/bridge';
 import { gameStore } from '../../store/gameStore';
 import type { Vec2 } from '../../types';
@@ -13,15 +16,9 @@ import type { Vec2 } from '../../types';
 const tmp = new Vector3();
 const UP = new Vector3(0, 1, 0);
 /** reused every frame (no per-frame allocation) */
-const motion = { speed: 0, running: false, wade: 0, turnRate: 0, localVel: new Vector3() };
+const motion = { speed: 0, running: false, wade: 0, turnRate: 0, localVel: new Vector3(), emote: 0 };
 const ray = new Raycaster();
 const ndc = new Vector2();
-
-function wrapAngle(a: number): number {
-  while (a > Math.PI) a -= Math.PI * 2;
-  while (a < -Math.PI) a += Math.PI * 2;
-  return a;
-}
 
 /** The local player: character model + controller. */
 export function Player() {
@@ -32,6 +29,58 @@ export function Player() {
   const pendingSpot = useRef<string | null>(null);
   const lastPublish = useRef(0);
   const stepToggle = useRef(0);
+  const env = useMemo(() => ({ map: world.map, grid: world.grid }), [world]);
+  /** prediction state: the authoritative-compatible simulation + render interpolation and corrections */
+  const sim = useMemo(() => {
+    const P = world.player;
+    const s0 = newPlayerSim(P.pos.x, P.pos.z, P.pos.y, P.facing);
+    return { pred: new Predictor(s0), prev: { ...s0 }, acc: 0, sendAcc: 0, corr: new Vector3(), out: [] as InputCommand[] };
+  }, [world]);
+
+  // server: spawn point (welcome), reconciliation (every snapshot), our own chat bubble
+  useEffect(() => {
+    const net = session.adapter;
+    const spawnAt = (sp: { x: number; z: number; y: number; facing: number }) => {
+      const s = newPlayerSim(sp.x, sp.z, sp.y, sp.facing);
+      sim.pred.reset(s);
+      Object.assign(sim.prev, s);
+      sim.corr.set(0, 0, 0);
+      path.current = null;
+      world.player.pos.set(sp.x, sp.y, sp.z);
+      world.player.facing = sp.facing;
+      world.camera.focus.copy(world.player.pos);
+    };
+    world.teleport = (x, z, facing) => spawnAt({ x, z, y: standHeight(world.map, x, z), facing });
+    const welcome = session.ws?.welcome;
+    if (welcome) spawnAt(welcome.spawn);
+    const offs = [
+      net.onEvent?.((m) => {
+        if (m.t === 'welcome') spawnAt(m.spawn);
+        if (m.t === 'chat' && m.id === remotes.selfId) world.selfChat = { text: m.text, until: performance.now() + 6000 };
+      }),
+      net.onSelfSnapshot?.((snap) => {
+        const S = sim.pred.state;
+        const bx = S.x;
+        const by = S.y;
+        const bz = S.z;
+        const err = sim.pred.reconcile(snap.self, snap.ackSeq, true, env);
+        const ddx = S.x - bx;
+        const ddy = S.y - by;
+        const ddz = S.z - bz;
+        sim.prev.x += ddx;
+        sim.prev.y += ddy;
+        sim.prev.z += ddz;
+        // small errors blend away over ~100 ms; large ones (teleport, long stall) snap
+        if (err > 1.5) sim.corr.set(0, 0, 0);
+        else if (err > 0) sim.corr.set(sim.corr.x - ddx, sim.corr.y - ddy, sim.corr.z - ddz);
+        world.netError = err;
+      }),
+    ];
+    return () => {
+      offs.forEach((o) => o?.());
+      world.teleport = null;
+    };
+  }, [sim, env, world]);
 
   useEffect(() => {
     const off = gameBridge.onAvatarChange((a) => character.setConfig(a));
@@ -136,12 +185,37 @@ export function Player() {
       }
     }
 
+    // fixed 60 Hz steps through the shared command layer (the server runs the same steps); rendering
+    // interpolates between the last two steps, plus a short-lived correction offset after reconciliation
+    const S = sim.pred.state;
+    const Q = sim.prev;
+    sim.acc = Math.min(sim.acc + rawDt, 0.25);
+    let n = 0;
+    while (sim.acc >= STEP_DT && n < 8) {
+      Object.assign(Q, S);
+      sim.pred.step(dx, dz, run, yaw, env);
+      sim.acc -= STEP_DT;
+      n++;
+    }
+    if (n === 8) sim.acc = 0;
+    const net = session.adapter;
+    if (net.authoritative && net.sendCommands) {
+      sim.sendAcc += rawDt;
+      if (sim.sendAcc >= 1 / NET.sendHz) {
+        sim.sendAcc %= 1 / NET.sendHz;
+        net.sendCommands(sim.out, sim.pred.takeUnsent(sim.out));
+      }
+    } else sim.pred.acknowledgeAll();
+    const a = sim.acc / STEP_DT;
+    sim.corr.multiplyScalar(Math.exp(-rawDt / 0.1));
+    if (sim.corr.lengthSq() < 1e-8) sim.corr.set(0, 0, 0);
+    P.pos.set(Q.x + (S.x - Q.x) * a + sim.corr.x, Q.y + (S.y - Q.y) * a + sim.corr.y, Q.z + (S.z - Q.z) * a + sim.corr.z);
+    P.vel.set(S.vx, 0, S.vz);
+    P.facing = wrapAngle(Q.facing + wrapAngle(S.facing - Q.facing) * a);
+    const turnRate = sim.pred.lastTurnRate;
     const wade = map.wadeDepth(P.pos.x, P.pos.z);
     const slow = wade > 0.02 ? GAME_CONFIG.player.shallowMultiplier : 1;
-    // shared, tested movement step (collision + sliding + sub-steps + height rule): src/game/engine/controller.ts
-    const next = stepMovement({ x: P.pos.x, z: P.pos.z, y: P.pos.y, vx: P.vel.x, vz: P.vel.z }, { x: 0, y: 0, run, yaw }, dt, { map, grid: world.grid }, { dx, dz });
-    P.pos.set(next.x, next.y, next.z);
-    P.vel.set(next.vx, 0, next.vz);
+
     world.debugMove.set(dx, 0, dz);
     Object.assign(debugStats, {
       x: P.pos.x,
@@ -161,17 +235,9 @@ export function Player() {
     P.moving = hs > 0.2;
     P.running = run && hs > GAME_CONFIG.player.walkSpeed * slow * 1.05;
     P.wade = wade;
-
-    // smooth turn toward the movement direction (no snapping)
-    let turnRate = 0;
-    if (hs > 0.15) {
-      const target = Math.atan2(P.vel.x, P.vel.z);
-      const diff = wrapAngle(target - P.facing);
-      const step = Math.sign(diff) * Math.min(Math.abs(diff), GAME_CONFIG.player.turnSpeed * dt * (0.5 + Math.min(1, Math.abs(diff))));
-      P.facing = wrapAngle(P.facing + step);
-      turnRate = step / Math.max(dt, 1e-4);
-    }
-
+    // moving ends sitting / dancing; a wave plays once
+    const em = localEmote;
+    if (em.id && (performance.now() > em.until || (hs > 0.5 && em.id !== 1))) setLocalEmote(null);
 
     character.root.position.copy(P.pos);
     character.root.rotation.y = P.facing;
@@ -180,6 +246,7 @@ export function Player() {
     motion.running = P.running;
     motion.wade = Math.min(1, wade / 0.45);
     motion.turnRate = turnRate;
+    motion.emote = localEmote.id;
     character.update(dt, motion);
 
     // wading leaves a slow trail of ripples even between steps

@@ -98,6 +98,8 @@ export class Room {
   private readonly pong = new Writer(16);
   private bytesWindow = { at: 0, bytes: 0, rate: 0 };
   private readonly aoiIn2: number;
+  /** commands consumed per tick at steady state (60 Hz steps / 20 Hz ticks = 3) */
+  private readonly perTick: number;
   private readonly aoiOut2: number;
 
   constructor(private readonly opts: RoomOptions) {
@@ -108,6 +110,7 @@ export class Room {
     this.now = opts.now ?? (() => performance.now());
     this.aoiIn2 = opts.aoiRadius ** 2;
     this.aoiOut2 = (opts.aoiRadius + NET.aoiHysteresis) ** 2;
+    this.perTick = Math.max(1, Math.round(NET.stepHz / opts.tickRate));
   }
 
   get size(): number {
@@ -373,7 +376,18 @@ export class Room {
         if (now - p.disconnectedAt > NET.reconnectWindowMs) this.remove(p);
         continue;
       }
-      let budget = p.commands.available(now);
+      // input jitter buffer: commands arrive in bursts (network jitter, a slow client's frames); applying
+      // them as they come makes the player move in spurts for everyone else. Consume a steady
+      // stepHz/tickRate per tick, refill ~2 ticks after running dry, catch up gently on a backlog.
+      const per = this.perTick;
+      const L = p.queue.length;
+      if (L === 0) p.buffering = true;
+      if (p.buffering) {
+        if (L < per * 2 && now - p.lastCommandAt < 250) continue;
+        p.buffering = false;
+      }
+      const want = L > per * 4 ? per + 2 : L > per * 2 ? per + 1 : per;
+      let budget = Math.min(want, p.commands.available(now));
       while (budget > 0 && p.queue.length) {
         const c = p.queue.shift()!;
         p.commands.take(now);

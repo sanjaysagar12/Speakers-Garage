@@ -1,4 +1,4 @@
-import { DEG, SIM } from '@shoreline/shared';
+import { DEG, SIM, VOICE } from '@shoreline/shared';
 
 /**
  * Single source of truth for tunable constants. World units are metres: x = east, z = south, y = up.
@@ -50,7 +50,6 @@ export const GAME_CONFIG = {
     cycleSeconds: 240,
   },
 
-  net: { sendIntervalMs: 100 },
   /** HUD / minimap position updates: ~8 Hz is plenty and keeps React out of the frame loop */
   ui: { positionPublishMs: 125 },
 } as const;
@@ -96,24 +95,38 @@ export interface QualityProfile {
   smoke: boolean;
   /** characters / creatures beyond this distance animate at a reduced rate */
   animDistance: number;
+  /** multiplayer: remote players drawn (nearest first) */
+  remotePlayers: number;
+  /** remote players beyond this distance animate at a reduced rate */
+  remoteAnimDistance: number;
+  /** voice: simultaneous peers, Opus bitrate cap, stereo panning (off = plain gain, less CPU) */
+  voicePeers: number;
+  voiceBitrate: number;
+  voiceSpatial: boolean;
+  /** name tags fade out beyond this distance */
+  nameTagDistance: number;
 }
 
 export const QUALITY: Record<Quality, QualityProfile> = {
   ultralow: {
     label: 'Ultra-Low', dpr: [0.6, 1], shadowMapSize: 0, shadowExtent: 0, smallShadows: false, propDensity: 0.3, viewDistance: 45, lodDistance: 18, groundRes: 0.5,
     post: 'none', gradeInShader: true, grain: 0, waterDetail: 0, sparkles: 0, cloudShadows: false, particles: 40, drift: 0, gulls: 0, crabs: 0, smoke: false, animDistance: 20,
+    remotePlayers: 8, remoteAnimDistance: 15, voicePeers: VOICE.maxPeersLow, voiceBitrate: VOICE.bitrateLow, voiceSpatial: false, nameTagDistance: 20,
   },
   low: {
     label: 'Low', dpr: [0.75, 1], shadowMapSize: 512, shadowExtent: 14, smallShadows: false, propDensity: 0.5, viewDistance: 60, lodDistance: 28, groundRes: 1,
     post: 'fxaa', gradeInShader: true, grain: 0.3, waterDetail: 1, sparkles: 0.45, cloudShadows: false, particles: 80, drift: 20, gulls: 3, crabs: 4, smoke: true, animDistance: 30,
+    remotePlayers: 15, remoteAnimDistance: 22, voicePeers: VOICE.maxPeersLow + 1, voiceBitrate: VOICE.bitrateLow, voiceSpatial: false, nameTagDistance: 28,
   },
   med: {
     label: 'Medium', dpr: [1, 1.5], shadowMapSize: 1024, shadowExtent: 19, smallShadows: true, propDensity: 0.8, viewDistance: 95, lodDistance: 45, groundRes: 1,
     post: 'full', gradeInShader: false, grain: 0.6, waterDetail: 2, sparkles: 0.75, cloudShadows: true, particles: 160, drift: 60, gulls: 5, crabs: 9, smoke: true, animDistance: 45,
+    remotePlayers: 30, remoteAnimDistance: 30, voicePeers: VOICE.maxPeers, voiceBitrate: VOICE.bitrate, voiceSpatial: true, nameTagDistance: 36,
   },
   high: {
     label: 'High', dpr: [1, 2], shadowMapSize: 2048, shadowExtent: 22, smallShadows: true, propDensity: 1, viewDistance: 220, lodDistance: 70, groundRes: 1,
     post: 'full', gradeInShader: false, grain: 1, waterDetail: 2, sparkles: 1, cloudShadows: true, particles: 160, drift: 90, gulls: 7, crabs: 9, smoke: true, animDistance: 70,
+    remotePlayers: 60, remoteAnimDistance: 45, voicePeers: VOICE.maxPeers, voiceBitrate: VOICE.bitrate, voiceSpatial: true, nameTagDistance: 40,
   },
 };
 

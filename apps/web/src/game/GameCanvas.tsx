@@ -10,30 +10,51 @@ import { useGameStore } from '../store/useGameStore';
 import { LoadingScreen } from '../ui/LoadingScreen';
 import type { GameMap } from './maps/types';
 import { devLog } from '../util/devlog';
+import { session } from './net/session';
 
 /**
- * Hosts the R3F canvas. On first entry in 'auto' mode, picks the starting tier (hardware hints + a ~1 s
- * benchmark, cached per device) while the loading screen shows. Remounts the world when the map changes;
+ * Hosts the R3F canvas. On entry: picks the starting tier in 'auto' mode (hardware hints + a ~1 s benchmark,
+ * cached per device), joins the room when playing online (falls back to offline if the server is
+ * unreachable), then builds the map, all behind the loading screen. Remounts the world when the map changes;
  * R3F disposes the renderer on unmount and every world component frees its own GPU resources.
  * DPR is owned by the governor (it starts at the tier maximum); antialiasing comes from the post pass,
  * so the default framebuffer is created without MSAA.
  */
 export function GameCanvas() {
-  const mapId = useGameStore((s) => s.mapId);
   const quality = useGameStore((s) => s.ui.quality);
   const mode = useGameStore((s) => s.ui.qualityMode);
-  const [stage, setStage] = useState<{ label: string; progress: number; map: GameMap | null }>({ label: 'Checking your device…', progress: 0.35, map: null });
+  const [stage, setStage] = useState<{ label: string; progress: number; map: GameMap | null; error?: string }>({ label: 'Checking your device…', progress: 0.25, map: null });
+  const [attempt, setAttempt] = useState(0);
 
+  // once per world entry (and per retry): tier -> connect -> map. Leaving the world closes the session.
   useEffect(() => {
     let alive = true;
     const run = async () => {
-      if (mode === 'auto') {
+      const st = gameStore.getState();
+      if (st.ui.qualityMode === 'auto') {
         const r = await detectTier();
         if (!alive) return;
         devLog(`[quality] auto -> ${r.tier} (${r.reason}; gpu "${r.gpu}")`);
         gameStore.getState().setUi({ quality: r.tier });
-      } else gameStore.getState().setUi({ quality: mode });
-      setStage((s) => ({ ...s, label: 'Building the beach…', progress: 0.65 }));
+      } else gameStore.getState().setUi({ quality: st.ui.qualityMode });
+      let mapId = st.mapId;
+      if (st.online) {
+        setStage((s) => ({ ...s, label: `Joining room "${st.roomId}"…`, progress: 0.45 }));
+        try {
+          const r = await session.start({ online: true, room: st.roomId, map: st.mapId });
+          if (!alive) return;
+          // a room keeps the map it was created with
+          if (r.map !== mapId) {
+            mapId = r.map;
+            gameStore.getState().setMap(r.map);
+          }
+        } catch (e) {
+          if (alive) setStage((s) => ({ ...s, error: (e as Error).message }));
+          return;
+        }
+      } else await session.start({ online: false, room: st.roomId, map: st.mapId });
+      if (!alive) return;
+      setStage((s) => ({ ...s, label: 'Building the world…', progress: 0.7 }));
       // let the progress bar paint before the (synchronous) map build
       await new Promise((res) => setTimeout(res, 30));
       const map = await loadMap(mapId);
@@ -42,14 +63,45 @@ export function GameCanvas() {
     void run();
     return () => {
       alive = false;
+      session.stop();
     };
-  }, [mode, mapId]);
+  }, [attempt]);
 
+  // switching back to 'auto' in the settings re-detects (cached) the tier
+  useEffect(() => {
+    if (mode !== 'auto' || !stage.map) return;
+    void detectTier().then((r) => gameStore.getState().setUi({ quality: r.tier }));
+  }, [mode, stage.map]);
+
+  if (stage.error)
+    return (
+      <div className="absolute inset-0 flex items-center justify-center bg-[#2E4A35] p-4 text-white">
+        <div className="flex max-w-sm flex-col items-center gap-4 text-center" role="alert">
+          <div className="text-lg font-bold">Could not join</div>
+          <p className="text-white/85">{stage.error}</p>
+          <div className="flex gap-2">
+            <button className="rounded-xl bg-white/90 px-4 py-2 font-bold text-pine" onClick={() => gameStore.getState().leaveWorld()}>
+              Back
+            </button>
+            <button
+              className="rounded-xl bg-white/20 px-4 py-2 font-bold"
+              onClick={() => {
+                gameStore.getState().setOnline(false);
+                setStage({ label: 'Loading…', progress: 0.3, map: null });
+                setAttempt((n) => n + 1);
+              }}
+            >
+              Play offline
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   if (!stage.map) return <LoadingScreen stage={stage.label} progress={stage.progress} />;
   return (
     <div className="absolute inset-0 touch-none select-none">
       <Canvas
-        key={mapId}
+        key={stage.map.id}
         flat
         shadows={{ type: PCFShadowMap }}
         dpr={Math.min(QUALITY[quality].dpr[1], window.devicePixelRatio || 1)}

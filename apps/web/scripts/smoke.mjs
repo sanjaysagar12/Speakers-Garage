@@ -34,9 +34,12 @@ const tier = await page.evaluate(() => window.__store.getState().ui.quality);
 step(`entered world, auto tier = ${tier}`);
 const pier = (await page.evaluate(() => window.__game.pier()))[0];
 await page.evaluate(([x, z, r]) => window.__game.teleport(x + Math.sin(r) * 6, z + Math.cos(r) * 6, r), [pier.x, pier.z, pier.rot]);
-await page.keyboard.down('w');
+// the camera yaw is limited to ±60°, so it can't face out along this pier: with yaw 0, S walks south, i.e.
+// outward along the pier (sliding along its rails). Movement runs in real time at any frame rate.
+await page.evaluate(() => window.__game.setYaw(0));
+await page.keyboard.down('s');
 await page.waitForTimeout(3000);
-await page.keyboard.up('w');
+await page.keyboard.up('s');
 const s = await page.evaluate(() => window.__game.state());
 step(`on the pier: onDeck=${s.onDeck} y=${s.y.toFixed(2)}`);
 await page.click('button[aria-label="Wardrobe"]');
@@ -53,7 +56,8 @@ for (const q of ['ultralow', 'low', 'med', 'high']) {
 await page.evaluate(() => window.__store.getState().leaveWorld());
 await page.waitForTimeout(2000);
 step('left the world');
-const real = [...new Set(errors)].filter((e) => !/toArray/.test(e));
+// without a game server running, the online attempt fails once and the game falls back to offline
+const real = [...new Set(errors)].filter((e) => !/toArray/.test(e) && !/WebSocket connection to .*\/ws' failed/.test(e));
 console.log(real.length ? `ERRORS:\n${real.join('\n')}` : 'no errors (ignoring the known startup toArray warning)');
 await browser.close();
 await (prod ? new Promise((r) => server.httpServer.close(r)) : server.close());

@@ -42,6 +42,12 @@ export class WorldRuntime {
   fx: FxEmitter | null = null;
   /** set by the hotspot system; the player calls it on arrival */
   triggerInteraction: ((id: string) => void) | null = null;
+  /** set by the Player: move the local player (spawn, tests); resets prediction */
+  teleport: ((x: number, z: number, facing: number) => void) | null = null;
+  /** our own speech bubble */
+  selfChat: { text: string; until: number } | null = null;
+  /** last reconciliation error (m), for the debug overlay */
+  netError = 0;
 
   constructor(readonly map: GameMap) {
     const t0 = performance.now();

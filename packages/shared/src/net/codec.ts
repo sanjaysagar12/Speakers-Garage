@@ -37,7 +37,7 @@ export const fromSpeedByte = (b: number): number => b / NET.speedScale;
 export class Writer {
   private buf: ArrayBuffer;
   private view: DataView;
-  private bytes: Uint8Array;
+  private bytes: Uint8Array<ArrayBuffer>;
   pos = 0;
   constructor(size = 1024) {
     this.buf = new ArrayBuffer(size);
@@ -87,7 +87,7 @@ export class Writer {
     this.pos += 8;
   }
   /** a view of the written bytes (valid until the next write); copy it if it must outlive that */
-  view8(): Uint8Array {
+  view8(): Uint8Array<ArrayBuffer> {
     return this.bytes.subarray(0, this.pos);
   }
   /** overwrite a u8 written earlier (e.g. a count known only at the end) */
@@ -146,7 +146,7 @@ export class Reader {
 // ---------------------------------------------------------------- input (client -> server)
 // u8 type, u16 firstSeq, u8 n, n x { i8 dx, i8 dz, u8 flags (bit0 run), u16 yaw }  = 4 + 5n bytes
 
-export function encodeInput(w: Writer, cmds: readonly InputCommand[], from = 0, to = cmds.length): Uint8Array {
+export function encodeInput(w: Writer, cmds: readonly InputCommand[], from = 0, to = cmds.length): Uint8Array<ArrayBuffer> {
   const n = Math.min(to - from, NET.maxCommandsPerPacket);
   w.reset();
   w.u8(BIN.input);
@@ -180,14 +180,14 @@ export function decodeInput(r: Reader, out: InputCommand[]): number {
 
 // ---------------------------------------------------------------- ping / pong
 
-export function encodePing(w: Writer, clientTime: number): Uint8Array {
+export function encodePing(w: Writer, clientTime: number): Uint8Array<ArrayBuffer> {
   w.reset();
   w.u8(BIN.ping);
   w.u32(clientTime);
   return w.view8();
 }
 
-export function encodePong(w: Writer, clientTime: number, serverTick: number): Uint8Array {
+export function encodePong(w: Writer, clientTime: number, serverTick: number): Uint8Array<ArrayBuffer> {
   w.reset();
   w.u8(BIN.pong);
   w.u32(clientTime);
@@ -240,7 +240,7 @@ export function writeEntity(w: Writer, e: Readonly<EntityState>): void {
   w.u8(e.speed);
 }
 
-export function endSnapshot(w: Writer, countAt: number, n: number): Uint8Array {
+export function endSnapshot(w: Writer, countAt: number, n: number): Uint8Array<ArrayBuffer> {
   w.patchU8(countAt, n);
   return w.view8();
 }

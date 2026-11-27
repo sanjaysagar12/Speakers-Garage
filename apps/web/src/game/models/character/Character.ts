@@ -103,6 +103,8 @@ export interface CharacterMotion {
   turnRate: number;
   /** local-space velocity (x right, z forward), for hair trailing */
   localVel: Vector3;
+  /** emote: 0 none, 1 wave, 2 dance, 3 sit (same encoding as the network animation byte) */
+  emote?: number;
 }
 
 type Pivots = Record<
@@ -125,6 +127,9 @@ export class Character {
   private readonly swing = new Vector3();
   private readonly swingVel = new Vector3();
   private lean = 0;
+  /** emote blend (0..1) and the emote being shown or faded out */
+  private emoteW = 0;
+  private emoteShown = 0;
   /** called with 0 (left) or 1 (right) when a foot plants */
   onStep: ((foot: 0 | 1) => void) | null = null;
 
@@ -505,6 +510,50 @@ export class Character {
     (this.mats.hair.uniforms.uSwing.value as Vector3).copy(this.swing);
     (this.mats.accessory.uniforms.uSwing.value as Vector3).copy(this.swing).multiplyScalar(1.4);
     (this.mats.top.uniforms.uSwing.value as Vector3).copy(this.swing).multiplyScalar(0.5);
+    this.applyEmote(dt, mo.emote ?? 0);
+  }
+
+  /** Emote poses layered over the gait, blended in and out (wave, dance, sit). */
+  private applyEmote(dt: number, emote: number): void {
+    if (emote) this.emoteShown = emote;
+    this.emoteW = MathUtils.damp(this.emoteW, emote ? 1 : 0, 7, dt);
+    const w = this.emoteW;
+    const P = this.p;
+    // channels the gait never sets: reset every frame so an emote can't leave them bent
+    P.spine.rotation.z = 0;
+    P.foreR.rotation.z = 0;
+    if (w < 0.001) return;
+    const t = this.time;
+    const mix = (cur: number, target: number) => cur + (target - cur) * w;
+    if (this.emoteShown === 1) {
+      // wave: right arm up and out, forearm swinging
+      P.armR.rotation.z = mix(P.armR.rotation.z, -2.55);
+      P.armR.rotation.x = mix(P.armR.rotation.x, -0.15);
+      P.foreR.rotation.x = mix(P.foreR.rotation.x, -0.35);
+      P.foreR.rotation.z = mix(P.foreR.rotation.z, 0.45 * Math.sin(t * 10));
+    } else if (this.emoteShown === 2) {
+      // dance: bounce, hip sway, arms up alternating
+      const b = Math.abs(Math.sin(t * 5.5));
+      P.hips.position.y = mix(P.hips.position.y, HIP_Y - 0.05 + b * 0.06);
+      P.hips.rotation.y = mix(P.hips.rotation.y, Math.sin(t * 2.75) * 0.4);
+      P.spine.rotation.z = mix(P.spine.rotation.z, Math.sin(t * 2.75 + 1) * 0.12);
+      P.armL.rotation.z = mix(P.armL.rotation.z, 2.3 + 0.35 * Math.sin(t * 5.5));
+      P.armR.rotation.z = mix(P.armR.rotation.z, -2.3 - 0.35 * Math.sin(t * 5.5 + Math.PI));
+      P.foreL.rotation.x = mix(P.foreL.rotation.x, -0.5);
+      P.foreR.rotation.x = mix(P.foreR.rotation.x, -0.5);
+      P.thighL.rotation.x = mix(P.thighL.rotation.x, -0.25 * b);
+      P.shinL.rotation.x = mix(P.shinL.rotation.x, 0.45 * b);
+    } else if (this.emoteShown === 3) {
+      // sit on the ground: legs forward, knees up, hands resting back
+      P.hips.position.y = mix(P.hips.position.y, HIP_Y - 0.6);
+      P.thighL.rotation.x = mix(P.thighL.rotation.x, -1.35);
+      P.thighR.rotation.x = mix(P.thighR.rotation.x, -1.25);
+      P.shinL.rotation.x = mix(P.shinL.rotation.x, 1.0);
+      P.shinR.rotation.x = mix(P.shinR.rotation.x, 0.85);
+      P.armL.rotation.x = mix(P.armL.rotation.x, 0.45);
+      P.armR.rotation.x = mix(P.armR.rotation.x, 0.45);
+      P.spine.rotation.x = mix(P.spine.rotation.x, -0.12);
+    }
   }
 
   /** world-space positions of the feet (for footprints) */

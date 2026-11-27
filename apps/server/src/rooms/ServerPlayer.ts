@@ -21,6 +21,8 @@ export class ServerPlayer {
   lastAppliedSeq = 65535;
   /** last time a command was applied (ms) */
   lastCommandAt = 0;
+  /** jitter buffer: refilling after running dry (commands wait until ~2 ticks' worth are queued) */
+  buffering = true;
   run = false;
   wade = 0;
   /** 0 = none, 1 + EMOTES index */
@@ -93,6 +95,7 @@ export class ServerPlayer {
     this.lastQueuedSeq = 65535;
     this.lastAppliedSeq = 65535;
     this.lastCommandAt = now;
+    this.buffering = true;
     this.inView.clear();
   }
 }

@@ -3,6 +3,25 @@ import type { AvatarConfig, DialogContent, NearbyInteraction } from '../types';
 import { DEFAULT_AVATAR, sanitizeAvatar } from '@shoreline/shared';
 import { DEFAULT_MAP, isMapId } from '@shoreline/shared';
 import { QUALITY_ORDER, type Quality, type QualityMode } from '../game/config';
+import type { NetStatus } from '../game/net/NetworkAdapter';
+
+/** One player as the HUD shows it (updated a few times per second at most). */
+export interface RosterEntry {
+  id: number;
+  name: string;
+  self: boolean;
+  voice: boolean;
+  muted: boolean;
+  speaking: boolean;
+}
+
+export interface ChatLine {
+  key: number;
+  id: number;
+  name: string;
+  text: string;
+  at: number;
+}
 
 
 export type Phase = 'landing' | 'playing';
@@ -35,6 +54,11 @@ export interface GameState {
   };
   nearby: NearbyInteraction | null;
   dialog: DialogContent | null;
+  /** multiplayer: play online (persisted), the room to join (persisted) */
+  online: boolean;
+  roomId: string;
+  net: { status: NetStatus; message?: string; room?: string; rtt: number; players: RosterEntry[]; selfId: number };
+  chat: ChatLine[];
   setName: (name: string) => void;
   setAvatar: (patch: Partial<AvatarConfig>) => void;
   replaceAvatar: (a: AvatarConfig) => void;
@@ -46,12 +70,18 @@ export interface GameState {
   openDialog: (d: DialogContent) => void;
   closeDialog: () => void;
   setUi: (patch: Partial<GameState['ui']>) => void;
+  setOnline: (online: boolean) => void;
+  setRoom: (room: string) => void;
+  setNet: (patch: Partial<GameState['net']>) => void;
+  addChat: (line: Omit<ChatLine, 'key' | 'at'>) => void;
 }
 
 const STORAGE_KEY = 'shoreline.profile.v2';
 const LEGACY_KEY = 'vinland.profile.v1';
 
 interface Saved {
+  online: boolean;
+  roomId: string;
   name: string;
   avatar: AvatarConfig;
   mapId: string;
@@ -68,13 +98,15 @@ const detectTouch = (): boolean => {
 };
 
 function loadProfile(): Saved {
-  const fallback: Saved = { name: '', avatar: { ...DEFAULT_AVATAR }, mapId: DEFAULT_MAP, qualityMode: 'auto', fpsCap: 60 };
+  const fallback: Saved = { online: true, roomId: 'beach', name: '', avatar: { ...DEFAULT_AVATAR }, mapId: DEFAULT_MAP, qualityMode: 'auto', fpsCap: 60 };
   try {
     const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_KEY);
     if (!raw) return fallback;
     // older saves stored an automatic default under `quality` (there was no setting); they start on auto
-    const p = JSON.parse(raw) as Partial<{ name: string; avatar: Record<string, unknown>; mapId: string; qualityMode: string; fpsCap: number }>;
+    const p = JSON.parse(raw) as Partial<{ online: boolean; roomId: string; name: string; avatar: Record<string, unknown>; mapId: string; qualityMode: string; fpsCap: number }>;
     return {
+      online: p.online !== false,
+      roomId: typeof p.roomId === 'string' && /^[a-z0-9-]{1,24}$/.test(p.roomId) ? p.roomId : 'beach',
       name: typeof p.name === 'string' ? p.name.slice(0, 18) : '',
       avatar: sanitizeAvatar(p.avatar as Partial<AvatarConfig>),
       mapId: isMapId(p.mapId) ? p.mapId : DEFAULT_MAP,
@@ -86,9 +118,9 @@ function loadProfile(): Saved {
   }
 }
 
-function persist(s: Pick<GameState, 'name' | 'avatar' | 'mapId'> & { qualityMode: QualityMode; fpsCap: 30 | 60 }): void {
+function persist(s: Pick<GameState, 'name' | 'avatar' | 'mapId' | 'online' | 'roomId'> & { qualityMode: QualityMode; fpsCap: 30 | 60 }): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ name: s.name, avatar: s.avatar, mapId: s.mapId, qualityMode: s.qualityMode, fpsCap: s.fpsCap }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ name: s.name, avatar: s.avatar, mapId: s.mapId, online: s.online, roomId: s.roomId, qualityMode: s.qualityMode, fpsCap: s.fpsCap }));
   } catch {
     /* storage unavailable */
   }
@@ -99,7 +131,7 @@ const initial = loadProfile();
 export const gameStore = createStore<GameState>((set, get) => {
   const save = () => {
     const s = get();
-    persist({ name: s.name, avatar: s.avatar, mapId: s.mapId, qualityMode: s.ui.qualityMode, fpsCap: s.ui.fpsCap });
+    persist({ name: s.name, avatar: s.avatar, mapId: s.mapId, online: s.online, roomId: s.roomId, qualityMode: s.ui.qualityMode, fpsCap: s.ui.fpsCap });
   };
   return {
     phase: 'landing',
@@ -110,6 +142,10 @@ export const gameStore = createStore<GameState>((set, get) => {
     ui: { hintOpen: true, muted: false, isTouch: detectTouch(), wardrobeOpen: false, dayNight: false, timeOfDay: 0, quality: initial.qualityMode === 'auto' ? (detectTouch() ? 'low' : 'med') : initial.qualityMode, qualityMode: initial.qualityMode, fpsCap: initial.fpsCap, settingsOpen: false, debug: false },
     nearby: null,
     dialog: null,
+    online: initial.online,
+    roomId: initial.roomId,
+    net: { status: 'offline', rtt: 0, players: [], selfId: -1 },
+    chat: [],
     setName: (name) => set({ name: name.slice(0, 18) }),
     setAvatar: (patch) => {
       set((s) => ({ avatar: sanitizeAvatar({ ...s.avatar, ...patch }) }));
@@ -129,7 +165,7 @@ export const gameStore = createStore<GameState>((set, get) => {
       set({ phase: 'playing', name: finalName, nearby: null, dialog: null });
       save();
     },
-    leaveWorld: () => set({ phase: 'landing', nearby: null, dialog: null, ui: { ...get().ui, wardrobeOpen: false } }),
+    leaveWorld: () => set({ phase: 'landing', nearby: null, dialog: null, chat: [], ui: { ...get().ui, wardrobeOpen: false } }),
     setPosition: (x, y, facing, yaw) => set({ position: { x, y, facing, yaw } }),
     setNearby: (nearby) => {
       if (get().nearby?.id === nearby?.id) return;
@@ -141,5 +177,19 @@ export const gameStore = createStore<GameState>((set, get) => {
       set((s) => ({ ui: { ...s.ui, ...patch } }));
       if (patch.qualityMode || patch.fpsCap) save();
     },
+    setOnline: (online) => {
+      set({ online });
+      save();
+    },
+    setRoom: (room) => {
+      const id = room
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '')
+        .slice(0, 24);
+      set({ roomId: id || 'beach' });
+      save();
+    },
+    setNet: (patch) => set((s) => ({ net: { ...s.net, ...patch } })),
+    addChat: (line) => set((s) => ({ chat: [...s.chat.slice(-49), { ...line, key: (s.chat[s.chat.length - 1]?.key ?? 0) + 1, at: Date.now() }] })),
   };
 });

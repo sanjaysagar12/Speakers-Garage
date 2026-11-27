@@ -44,7 +44,10 @@ export async function buildApp({ env, store = new MemoryPlayerStore() }: AppDeps
   );
   app.addHook('onClose', async () => rooms.stopAll());
 
-  const originAllowed = (origin: string | undefined) => !origin || env.ALLOWED_ORIGINS.includes(origin) || env.ALLOWED_ORIGINS.includes('*');
+  // development: also accept this machine and private-network origins (phones on the same Wi-Fi)
+  const PRIVATE = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/;
+  const originAllowed = (origin: string | undefined) =>
+    !origin || env.ALLOWED_ORIGINS.includes(origin) || env.ALLOWED_ORIGINS.includes('*') || (env.NODE_ENV === 'development' && PRIVATE.test(origin));
 
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cors, { origin: (origin, cb) => cb(null, originAllowed(origin)) });

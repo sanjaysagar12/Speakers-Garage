@@ -43,6 +43,14 @@ const vendorGroups = {
   ],
 };
 
+function gameProxy() {
+  const target = process.env.GAME_SERVER ?? 'http://127.0.0.1:8787';
+  return {
+    '/ws': { target: target.replace(/^http/, 'ws'), ws: true },
+    '/api': { target, rewrite: (p: string) => p.replace(/^\/api/, '') },
+  };
+}
+
 export default defineConfig({
   // ANALYZE=1 npm run build -> dist/stats.html (bundle treemap)
   plugins: [react(), precompress(), ...(process.env.ANALYZE ? [visualizer({ filename: 'dist/stats.html', gzipSize: true, brotliSize: true })] : [])],
@@ -54,5 +62,8 @@ export default defineConfig({
   },
   // workspace packages expose their TypeScript sources under the "source" condition: no pre-build needed in dev
   resolve: { conditions: ['source', ...defaultClientConditions] },
-  server: { host: true },
+  // the game server (apps/server) behind the dev/preview server's own origin: no CORS, and wss:// comes
+  // for free when Vite runs on HTTPS (needed for the microphone on phones). GAME_SERVER overrides the target.
+  server: { host: true, proxy: gameProxy() },
+  preview: { proxy: gameProxy() },
 });

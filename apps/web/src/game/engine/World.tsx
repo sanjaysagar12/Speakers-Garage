@@ -14,9 +14,11 @@ import { Governor } from '../perf/Governor';
 import { frameStats } from '../perf/stats';
 import { FrameDriver } from '../perf/FrameDriver';
 import { gameStore } from '../../store/gameStore';
-import { deckAt, standHeight } from '@shoreline/shared';
+import { deckAt } from '@shoreline/shared';
 import { useGameStore } from '../../store/useGameStore';
 import { RemotePlayers } from './Remote';
+import { remotes } from '../net/entities';
+import { session } from '../net/session';
 import { AmbientAudio } from '../systems/AmbientAudio';
 import { useReleaseGpuOnUnmount } from '../util/releaseGpu';
 import { G } from '../materials/globals';
@@ -133,12 +135,11 @@ export function World({ map, quality }: { map: GameMap; quality: Quality }) {
         out.shadowMapEnabled = gl.shadowMap.enabled ? 1 : 0;
         return out;
       },
-      teleport: (x: number, z: number, facing: number) => {
-        runtime.player.pos.set(x, standHeight(runtime.map, x, z), z);
-        runtime.player.vel.set(0, 0, 0);
-        runtime.player.facing = facing;
-        runtime.camera.focus.copy(runtime.player.pos);
-      },
+      teleport: (x: number, z: number, facing: number) => runtime.teleport?.(x, z, facing),
+      /** remote players as this client renders them (interpolated) */
+      remotes: () => [...remotes.entities.values()].map((e) => ({ id: e.id, ready: e.render.ready, x: e.render.x, z: e.render.z, y: e.render.y, speed: Math.hypot(e.render.vx, e.render.vz), anim: e.render.anim })),
+      net: () => ({ authoritative: !!session.adapter.authoritative, status: session.ws?.status ?? 'offline', selfId: remotes.selfId, rtt: session.ws?.rtt ?? 0, delay: remotes.delay, jitter: remotes.jitter, netError: runtime.netError, bytesIn: session.ws?.bytesIn ?? 0, bytesOut: session.ws?.bytesOut ?? 0 }),
+      self: () => ({ x: runtime.player.pos.x, z: runtime.player.pos.z, y: runtime.player.pos.y, facing: runtime.player.facing }),
       setYaw: (deg: number) => {
         runtime.camera.yawTarget = (deg * Math.PI) / 180;
         runtime.camera.yaw = runtime.camera.yawTarget;

@@ -92,10 +92,18 @@ export class Predictor {
     return Math.hypot(this.state.x - px, this.state.z - pz);
   }
 
-  /** Teleport / respawn: forget pending input. */
+  /** Offline play: nothing will ever acknowledge commands, so drop them after applying. */
+  acknowledgeAll(): void {
+    this.head = (this.head + this.count) % RING;
+    this.count = 0;
+    this.unsent = 0;
+  }
+
+  /** New session (welcome after join/resume) or teleport: forget pending input, restart numbering at 0. */
   reset(s: Readonly<PlayerSim>): void {
     Object.assign(this.state, s);
     this.count = 0;
     this.unsent = 0;
+    this.nextSeq = 0;
   }
 }
