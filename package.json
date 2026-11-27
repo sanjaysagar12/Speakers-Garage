@@ -12,7 +12,11 @@
     "lint": "eslint . --max-warnings 0",
     "shots": "node scripts/shots.mjs",
     "typecheck": "tsc --noEmit",
-    "test:movement": "vitest run tests/movement.test.ts"
+    "test:movement": "vitest run tests/movement.test.ts",
+    "size": "node scripts/size-report.mjs dist",
+    "perf": "node scripts/perf.mjs",
+    "pier-check": "node scripts/pier-check.mjs",
+    "analyze": "ANALYZE=1 vite build"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
@@ -39,6 +43,7 @@
     "globals": "^17.14.0",
     "playwright": "^1.65.1",
     "postcss": "^8.5.33",
+    "rollup-plugin-visualizer": "^5.14.0",
     "sharp": "^0.35.5",
     "tailwindcss": "^3.4.19",
     "tsx": "^4.23.15",

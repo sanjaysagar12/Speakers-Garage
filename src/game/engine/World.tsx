@@ -50,6 +50,8 @@ function Audio() {
   return null;
 }
 
+const frameTotals = { calls: 0, triangles: 0 };
+
 /** The whole 3D world for one map. Everything below shares one WorldRuntime through context. */
 export function World({ map, quality }: { map: GameMap; quality: Quality }) {
   const gl = useThree((s) => s.gl);
@@ -78,10 +80,26 @@ export function World({ map, quality }: { map: GameMap; quality: Quality }) {
     G.uSparkle.value = q.sparkles;
   }, [q]);
 
-  // dev-only hook for scripts/pier-check.mjs
+  // per-frame totals across every pass (scene, shadow map, post), for the perf hook
   useEffect(() => {
-    if (!import.meta.env.DEV) return;
+    if (!(import.meta.env.DEV || import.meta.env.VITE_PERF_HOOKS)) return;
+    gl.info.autoReset = false;
+    return () => {
+      gl.info.autoReset = true;
+    };
+  }, [gl]);
+  useFrame(() => {
+    if (!(import.meta.env.DEV || import.meta.env.VITE_PERF_HOOKS) || gl.info.autoReset) return;
+    frameTotals.calls = gl.info.render.calls;
+    frameTotals.triangles = gl.info.render.triangles;
+    gl.info.reset();
+  }, -1);
+
+  // test hook for scripts/pier-check.mjs and scripts/perf.mjs: dev builds, or a VITE_PERF_HOOKS=1 build only
+  useEffect(() => {
+    if (!(import.meta.env.DEV || import.meta.env.VITE_PERF_HOOKS)) return;
     const api = {
+      renderInfo: () => ({ ...frameTotals, geometries: gl.info.memory.geometries, textures: gl.info.memory.textures, programs: gl.info.programs?.length ?? 0 }),
       teleport: (x: number, z: number, facing: number) => {
         runtime.player.pos.set(x, standHeight(runtime.map, x, z), z);
         runtime.player.vel.set(0, 0, 0);
@@ -99,7 +117,7 @@ export function World({ map, quality }: { map: GameMap; quality: Quality }) {
     return () => {
       delete (window as unknown as { __game?: typeof api }).__game;
     };
-  }, [runtime]);
+  }, [runtime, gl]);
 
   return (
     <WorldContext.Provider value={runtime}>

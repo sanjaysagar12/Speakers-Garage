@@ -14,7 +14,7 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-if (import.meta.env.DEV || params.has('debug')) {
+if (import.meta.env.DEV || import.meta.env.VITE_PERF_HOOKS) {
   void import('./store/gameStore').then((m) => {
     (window as unknown as { __store: typeof m.gameStore }).__store = m.gameStore;
   });

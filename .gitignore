@@ -4,3 +4,5 @@ public/assets
 .generated
 shots
 pier-check
+perf-results
+.perf-dist
