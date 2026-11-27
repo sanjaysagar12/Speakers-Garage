@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; margin: 0; overflow: hidden; background: #2E4A35; }
+body { font-family: "Baloo 2", "Trebuchet MS", system-ui, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+canvas { display: block; outline: none; }
+
+/* Landing backdrop: a painted valley suggested with layered gradients, no image needed. */
+.valley-bg {
+  background:
+    radial-gradient(ellipse 120% 70% at 50% 108%, #4F7A42 0 42%, transparent 43%),
+    radial-gradient(ellipse 90% 52% at 18% 96%, #5E8C47 0 48%, transparent 49%),
+    radial-gradient(ellipse 80% 44% at 86% 100%, #426B36 0 48%, transparent 49%),
+    linear-gradient(#cfe3ee 0%, #dbe9e4 34%, #9cc06e 62%, #7FA85C 100%);
+}
+.ridge {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='150' preserveAspectRatio='none'%3E%3Cpath d='M0 150 L60 54 L96 92 L150 26 L206 86 L252 50 L310 104 L360 60 L414 110 L462 72 L520 128 L520 150Z' fill='%237c7a82'/%3E%3Cpath d='M150 26 L132 48 L168 48Z M252 50 L238 68 L268 68Z M360 60 L348 76 L374 76Z' fill='%23f2f4f6'/%3E%3C/svg%3E");
+  background-size: 520px 150px;
+  background-repeat: repeat-x;
+}
+.glass { background: rgba(255,255,255,.84); backdrop-filter: blur(10px); }
+@keyframes driftx { from { background-position-x: 0; } to { background-position-x: 520px; } }
+.drift { animation: driftx 90s linear infinite; }

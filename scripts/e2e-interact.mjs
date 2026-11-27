@@ -1,0 +1,24 @@
+import { chromium } from 'playwright';
+const out = process.argv[2] ?? '.';
+const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
+const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const errors = [];
+page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+const pos = async () => page.evaluate(() => { const s = window.__store.getState(); return { x: Math.round(s.position.x), y: Math.round(s.position.y), near: s.nearby?.id ?? null, dialog: s.dialog?.title ?? null }; });
+await page.goto('http://localhost:5173/');
+await page.click('text=Enter world');
+await page.waitForTimeout(3500);
+await page.mouse.click(120, 200);
+await page.waitForTimeout(9000);
+console.log('at sign', await pos());
+await page.screenshot({ path: `${out}/bubble.png` });
+// dismiss, then leave and re-enter (destroy/recreate)
+await page.click('[aria-label="Leave world"]');
+await page.waitForTimeout(800);
+await page.click('text=Enter world');
+await page.waitForTimeout(3000);
+console.log('re-entered', await pos());
+await page.keyboard.press('e');
+console.log(errors.join('\n') || 'no console errors');
+await browser.close();
