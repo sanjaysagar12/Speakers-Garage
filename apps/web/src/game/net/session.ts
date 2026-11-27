@@ -1,4 +1,5 @@
 import { gameStore, type RosterEntry } from '../../store/gameStore';
+import { KEYS } from '../../storage';
 import { LocalAdapter, type NetworkAdapter, type NetStatus } from './NetworkAdapter';
 import { WebSocketAdapter } from './WebSocketAdapter';
 import { serverUrl } from './endpoints';
@@ -15,7 +16,7 @@ let ws: WebSocketAdapter | null = null;
 let rosterTimer = 0;
 
 /** Resume token per tab (sessionStorage): a reload continues as the same player, a new tab is a new one. */
-const RESUME_KEY = 'shoreline.resume.v1';
+const RESUME_KEY = KEYS.resume;
 function loadToken(room: string): string | undefined {
   try {
     const r = JSON.parse(sessionStorage.getItem(RESUME_KEY) ?? 'null') as { room: string; token: string } | null;

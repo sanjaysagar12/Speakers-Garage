@@ -1,5 +1,5 @@
 {
-  "name": "@shoreline/shared",
+  "name": "@speakersgarage/shared",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -31,7 +31,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@shoreline/config": "workspace:*",
+    "@speakersgarage/config": "workspace:*",
     "@types/node": "^26.6.11",
     "eslint": "^10.15.0",
     "tsup": "^9.0.0",

@@ -1,5 +1,5 @@
 {
-  "name": "shoreline",
+  "name": "speakers-garage",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.23.0",
@@ -14,11 +14,11 @@
     "test": "turbo run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:fit": "pnpm --filter @shoreline/web test:fit",
-    "test:movement": "pnpm --filter @shoreline/shared exec vitest run tests/movement.test.ts"
+    "test:fit": "pnpm --filter @speakersgarage/web test:fit",
+    "test:movement": "pnpm --filter @speakersgarage/shared exec vitest run tests/movement.test.ts"
   },
   "devDependencies": {
-    "@shoreline/config": "workspace:*",
+    "@speakersgarage/config": "workspace:*",
     "prettier": "^3.10.1",
     "turbo": "^2.11.13"
   }

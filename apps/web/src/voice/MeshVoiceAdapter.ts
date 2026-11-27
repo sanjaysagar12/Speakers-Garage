@@ -1,4 +1,4 @@
-import { VOICE, type IceServerInfo, type ServerMessage } from '@shoreline/shared';
+import { VOICE, type IceServerInfo, type ServerMessage } from '@speakersgarage/shared';
 import type { NetworkAdapter } from '../game/net/NetworkAdapter';
 import { remotes } from '../game/net/entities';
 import { SpatialVoice, Vad } from './spatial';

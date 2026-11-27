@@ -4,7 +4,7 @@ import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 const AvatarPreview = lazy(() => import('./AvatarPreview').then((m) => ({ default: m.AvatarPreview })));
 const renderThumb: typeof import('../game/models/character/thumbs').renderThumb = (...a) => import('../game/models/character/thumbs').then((m) => m.renderThumb(...a));
 import { useGameStore } from '../store/useGameStore';
-import { AVATAR_SLOTS, CLOTH_COLOURS, HAIR_COLOURS, SKIN_TONES, SLOT_FIELDS } from '@shoreline/shared';
+import { AVATAR_SLOTS, CLOTH_COLOURS, HAIR_COLOURS, SKIN_TONES, SLOT_FIELDS } from '@speakersgarage/shared';
 import { enforceConflicts, resolveFit } from '../game/models/character/fitRules';
 import type { AvatarConfig, Slot } from '../types';
 

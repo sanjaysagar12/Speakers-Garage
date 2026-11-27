@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Brand } from '../ui/Brand';
 import { Canvas } from '@react-three/fiber';
 import { PCFShadowMap } from 'three';
 import { World } from './engine/World';
@@ -82,6 +83,7 @@ export function GameCanvas() {
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-[#2E4A35] p-4 text-white">
         <div className="flex max-w-sm flex-col items-center gap-4 text-center" role="alert">
+          <Brand size={36} tone="light" />
           <div className="text-lg font-bold">Could not join</div>
           <p className="text-white/85">{stage.error}</p>
           <div className="flex gap-2">

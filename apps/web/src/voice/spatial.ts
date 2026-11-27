@@ -1,4 +1,4 @@
-import { VOICE } from '@shoreline/shared';
+import { VOICE } from '@speakersgarage/shared';
 
 /**
  * Per-remote audio routing:  MediaStreamSource -> GainNode -> [StereoPannerNode] -> master -> speakers.

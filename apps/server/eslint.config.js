@@ -1,3 +1,3 @@
-import { shorelineEslint } from '@shoreline/config/eslint';
+import { speakersGarageEslint } from '@speakersgarage/config/eslint';
 
-export default shorelineEslint({ node: true });
+export default speakersGarageEslint({ node: true });

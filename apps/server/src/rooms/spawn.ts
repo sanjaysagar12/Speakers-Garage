@@ -1,4 +1,4 @@
-import { SIM, standHeight, type CollisionGrid, type MapData } from '@shoreline/shared';
+import { SIM, standHeight, type CollisionGrid, type MapData } from '@speakersgarage/shared';
 
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
 

@@ -1,4 +1,4 @@
-import type { AvatarConfig, ClientMessage, Emote, InputCommand, ServerMessage, Snapshot } from '@shoreline/shared';
+import type { AvatarConfig, ClientMessage, Emote, InputCommand, ServerMessage, Snapshot } from '@speakersgarage/shared';
 import type { PlayerProfile, PlayerState } from '../../types';
 
 export type Unsubscribe = () => void;

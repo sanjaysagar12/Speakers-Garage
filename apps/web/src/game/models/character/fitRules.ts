@@ -1,5 +1,5 @@
 import type { AvatarConfig, Slot } from '../../../types';
-import { SLOT_FIELDS } from '@shoreline/shared';
+import { SLOT_FIELDS } from '@speakersgarage/shared';
 import type { GarmentPart } from './garments';
 
 /**

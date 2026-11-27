@@ -85,7 +85,7 @@ export async function composeAtlas(
         },
       ]),
     ),
-    meta: { app: 'shoreline build-assets', version: '1.0', image: '', format: 'RGBA8888', size: { w: width, h: height }, scale: 1 },
+    meta: { app: 'speakers-garage build-assets', version: '1.0', image: '', format: 'RGBA8888', size: { w: width, h: height }, scale: 1 },
   };
   return { png, json, width, height };
 }

@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { NET, type Emote } from '@shoreline/shared';
+import { NET, type Emote } from '@speakersgarage/shared';
 import { useGameStore } from '../store/useGameStore';
 import { gameStore } from '../store/gameStore';
 import { session } from '../game/net/session';

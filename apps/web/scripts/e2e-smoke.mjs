@@ -37,7 +37,7 @@ await page.waitForTimeout(700);
 await page.screenshot({ path: `${out}/02_customizer.png` });
 
 await page.fill('input[maxlength="18"]', 'Thorfinn');
-await page.click('text=Enter the valley');
+await page.click('text=Enter the garage');
 await page.waitForTimeout(7000);
 console.log('spawn', await pos());
 await page.screenshot({ path: `${out}/03_world.png` });

@@ -1,4 +1,4 @@
-import { ANIM, fromFixed, fromHeading, fromSpeedByte, type PlayerInfo, type Snapshot } from '@shoreline/shared';
+import { ANIM, fromFixed, fromHeading, fromSpeedByte, type PlayerInfo, type Snapshot } from '@speakersgarage/shared';
 
 /**
  * Remote players for the render loop: a mutable store, never React state. Snapshots (20 Hz) are buffered

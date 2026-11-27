@@ -1,7 +1,7 @@
 /**
  * Load test: N bots random-walking in one room against a real server process.
  *
- *   pnpm --filter @shoreline/server loadtest [--bots 100] [--seconds 60] [--aoi 40] [--spread 0]
+ *   pnpm --filter @speakersgarage/server loadtest [--bots 100] [--seconds 60] [--aoi 40] [--spread 0]
  *
  * The server runs as a child process (production mode) so its CPU and memory are measured on their own.
  * Bots send input exactly like the web client (3 commands per 50 ms packet) and decode every snapshot.
@@ -12,7 +12,7 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
-import { BIN, NET, PROTOCOL_VERSION, Reader, Writer, decodeSnapshot, encodeInput, newSnapshot, quantizeAxis, sanitizeAvatar, type InputCommand } from '@shoreline/shared';
+import { BIN, NET, PROTOCOL_VERSION, Reader, Writer, decodeSnapshot, encodeInput, newSnapshot, quantizeAxis, sanitizeAvatar, type InputCommand } from '@speakersgarage/shared';
 
 const arg = (k: string, d: string) => {
   const i = process.argv.indexOf(`--${k}`);

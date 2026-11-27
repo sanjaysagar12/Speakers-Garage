@@ -185,7 +185,7 @@ importers:
 
   .:
     devDependencies:
-      '@shoreline/config':
+      '@speakersgarage/config':
         specifier: workspace:*
         version: link:packages/config
       prettier:
@@ -209,7 +209,7 @@ importers:
       '@fastify/websocket':
         specifier: ^11.3.7
         version: 11.3.7
-      '@shoreline/shared':
+      '@speakersgarage/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       fastify:
@@ -219,7 +219,7 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
-      '@shoreline/config':
+      '@speakersgarage/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@types/node':
@@ -261,7 +261,7 @@ importers:
       '@react-three/postprocessing':
         specifier: ^2.19.1
         version: 2.19.1(@react-three/fiber@8.18.0(@types/react@18.3.32)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.172.0))(@types/three@0.172.0)(react@18.3.1)(three@0.172.0)
-      '@shoreline/shared':
+      '@speakersgarage/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       easystarjs:
@@ -283,7 +283,7 @@ importers:
         specifier: ^5.1.0
         version: 5.1.0(@types/react@18.3.32)(react@18.3.1)(use-sync-external-store@1.7.0(react@18.3.1))
     devDependencies:
-      '@shoreline/config':
+      '@speakersgarage/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@types/node':
@@ -359,7 +359,7 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
-      '@shoreline/config':
+      '@speakersgarage/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':

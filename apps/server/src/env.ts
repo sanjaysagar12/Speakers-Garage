@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { NET } from '@shoreline/shared';
+import { NET } from '@speakersgarage/shared';
 
 const list = (fallback: string) =>
   z

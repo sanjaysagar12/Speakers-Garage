@@ -1,5 +1,5 @@
 {
-  "name": "@shoreline/web",
+  "name": "@speakersgarage/web",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -30,7 +30,7 @@
     "react-dom": "^18.3.1",
     "three": "^0.172.0",
     "zustand": "^5.1.0",
-    "@shoreline/shared": "workspace:*"
+    "@speakersgarage/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.6.11",
@@ -49,6 +49,6 @@
     "typescript": "^6.0.3",
     "vite": "^8.4.0",
     "vitest": "^3.2.4",
-    "@shoreline/config": "workspace:*"
+    "@speakersgarage/config": "workspace:*"
   }
 }

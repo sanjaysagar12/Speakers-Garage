@@ -1,5 +1,5 @@
 import type { GameMap } from './types';
-import { DEFAULT_MAP, MAP_NAMES } from '@shoreline/shared';
+import { DEFAULT_MAP, MAP_NAMES } from '@speakersgarage/shared';
 
 /**
  * Every playable map. Each map's code and data (Vinland's tile JSON is ~600 KB) is its own chunk, loaded

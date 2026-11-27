@@ -36,11 +36,11 @@ import {
   buildVolleyball,
 } from './beachProps';
 import { buildBeachBar, buildCampfire, buildHut, buildLifeguardTower, buildLighthouse, buildPier } from './structures';
-import { PROP_META, boardwalkParams, type Params, type PierParams, type PropMeta } from '@shoreline/shared';
+import { PROP_META, boardwalkParams, type Params, type PierParams, type PropMeta } from '@speakersgarage/shared';
 
 import { PAL } from './palette';
 
-export type { Footprint, Params } from '@shoreline/shared';
+export type { Footprint, Params } from '@speakersgarage/shared';
 
 /** The 3D side of a prop type. Collision footprint, label and floating come from PROP_META (shared). */
 interface PropBuilders {

@@ -1,6 +1,6 @@
 import { js as EasyStarJS } from 'easystarjs';
 import { GAME_CONFIG } from '../config';
-import type { CollisionGrid } from '@shoreline/shared';
+import type { CollisionGrid } from '@speakersgarage/shared';
 import type { Vec2 } from '../../types';
 
 /** Click/tap-to-move: EasyStar over a coarse grid derived from the player-sized collision test. Vec2.y = world z. */

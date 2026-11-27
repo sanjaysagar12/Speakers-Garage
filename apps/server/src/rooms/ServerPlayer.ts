@@ -1,4 +1,4 @@
-import { NET, RATE, Writer, type AvatarConfig, type EntityState, type InputCommand, type PlayerInfo, type PlayerSim } from '@shoreline/shared';
+import { NET, RATE, Writer, type AvatarConfig, type EntityState, type InputCommand, type PlayerInfo, type PlayerSim } from '@speakersgarage/shared';
 import { TokenBucket } from '../net/ratelimit';
 
 /** The server side of one connection. Anything that can carry text and binary frames (ws, tests, bots). */

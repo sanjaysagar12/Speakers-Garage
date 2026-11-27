@@ -1,4 +1,4 @@
-import { EMOTES, type Emote } from '@shoreline/shared';
+import { EMOTES, type Emote } from '@speakersgarage/shared';
 import { session } from './session';
 
 /** The local player's emote: 0 = none, 1 + EMOTES index (same encoding as the animation byte). */

@@ -1,5 +1,5 @@
 import { BufferAttribute, BufferGeometry, CatmullRomCurve3, SphereGeometry, Vector3, type Material } from 'three';
-import { smoothstep } from '@shoreline/shared';
+import { smoothstep } from '@speakersgarage/shared';
 import type { ModelBuilder, VertexMask } from '../util/builder';
 import { HEAD } from './rig';
 

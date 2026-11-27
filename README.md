@@ -1,4 +1,4 @@
-# Shoreline
+# Speaker's Garage
 
 A stylized 3D beach world in the browser where players meet, walk around together, chat and talk by
 voice with whoever is standing near them. Everything you see (terrain, water, props, characters) is built
@@ -93,7 +93,7 @@ packages/shared/src/         types, avatar catalog, config, map/ (beach, vinland
 
 ```bash
 pnpm test                                   # 22 server + 18 shared tests (incl. determinism, anti-cheat, AOI)
-pnpm --filter @shoreline/server loadtest -- --bots 100 --seconds 60
+pnpm --filter @speakersgarage/server loadtest -- --bots 100 --seconds 60
 cd apps/web
 node scripts/mp-check.mjs                   # two real browsers + real server: movement, chat, emote, refresh
 node scripts/mp-check.mjs --latency 200 --jitter 40      # through a delay/jitter/loss TCP proxy
@@ -102,7 +102,7 @@ node scripts/smoke.mjs [--preview]          # single-player smoke (dev or produc
 ```
 
 The browser scripts use headless Chromium with software rendering, so their frame rates are far below
-real hardware. Playwright's browser: `pnpm --filter @shoreline/web exec playwright install chromium`.
+real hardware. Playwright's browser: `pnpm --filter @speakersgarage/web exec playwright install chromium`.
 
 ## Voice with two devices on the same Wi-Fi
 
@@ -119,12 +119,12 @@ Browsers only allow the microphone on **HTTPS** pages (or `localhost`). For a ph
 
 ## Deployment outline
 
-- **Server:** `docker build -f apps/server/Dockerfile -t shoreline-server .` (multi-stage, non-root,
+- **Server:** `docker build -f apps/server/Dockerfile -t speakers-garage .` (multi-stage, non-root,
   healthcheck on `/health`). Environment: `PORT`, `ALLOWED_ORIGINS` (the web app's origin),
   `TICK_RATE`, `MAX_PLAYERS_PER_ROOM`, `AOI_RADIUS`, `TURN_URLS`, `TURN_SECRET`, `TURN_TTL_SECONDS`
   (all in `.env.example`). Put it behind a TLS proxy (Caddy, nginx, a cloud load balancer) so clients use
   `wss://`. WebSockets need the proxy's upgrade support and idle timeouts above 30 s.
-- **Web app:** `pnpm --filter @shoreline/web build` and host `apps/web/dist` on any static host or CDN
+- **Web app:** `pnpm --filter @speakersgarage/web build` and host `apps/web/dist` on any static host or CDN
   (it already contains `.gz` and `.br` files). Build it with `VITE_SERVER_URL=wss://game.example.com/ws`.
 - **TURN:** coturn on a small VM with a public IP (`infra/docker-compose.yml`, `infra/coturn/turnserver.conf`).
   Open **3478/udp+tcp**, **5349/tcp** (TLS) and the relay range **49160-49400/udp**. Use the same secret as

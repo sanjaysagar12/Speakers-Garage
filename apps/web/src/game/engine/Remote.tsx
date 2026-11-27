@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group, Raycaster, Vector2, Vector3, type PerspectiveCamera } from 'three';
-import { ANIM, sanitizeAvatar, type AvatarConfig } from '@shoreline/shared';
+import { ANIM, sanitizeAvatar, type AvatarConfig } from '@speakersgarage/shared';
 import { Character, type CharacterMotion } from '../models/character/Character';
 import { useWorld } from './runtime';
 import { QUALITY } from '../config';

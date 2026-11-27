@@ -1,4 +1,4 @@
-export type { AvatarConfig, InteractionAction, InteractionDef, InteractionKind, PlayerProfile, PlayerState, Slot, SlotOption, Vec2 } from '@shoreline/shared';
+export type { AvatarConfig, InteractionAction, InteractionDef, InteractionKind, PlayerProfile, PlayerState, Slot, SlotOption, Vec2 } from '@speakersgarage/shared';
 
 export interface DialogContent {
   title: string;

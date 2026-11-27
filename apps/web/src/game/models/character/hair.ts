@@ -1,6 +1,6 @@
 import { Color, SphereGeometry, TorusGeometry, Vector3, type Material } from 'three';
 import { ModelBuilder } from '../util/builder';
-import { smoothstep } from '@shoreline/shared';
+import { smoothstep } from '@speakersgarage/shared';
 import { ellipsoid, ribbon, rng, sweep } from '../util/geo';
 import { bareHairMask, hairMask, type HatFit } from './hats';
 import { HEAD } from './rig';

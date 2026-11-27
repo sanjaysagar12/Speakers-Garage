@@ -1,4 +1,4 @@
-import { createVinlandMapData, type VinlandData } from '@shoreline/shared';
+import { createVinlandMapData, type VinlandData } from '@speakersgarage/shared';
 import { createVinlandGround } from './VinlandGround';
 import type { GameMap } from '../types';
 

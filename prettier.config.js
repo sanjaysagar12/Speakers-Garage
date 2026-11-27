@@ -1,1 +1,1 @@
-export { default } from '@shoreline/config/prettier';
+export { default } from '@speakersgarage/config/prettier';

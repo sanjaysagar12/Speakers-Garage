@@ -10,7 +10,7 @@ import {
   Vector2,
   Vector3,
 } from 'three';
-import { rng } from '@shoreline/shared';
+import { rng } from '@speakersgarage/shared';
 
 export { rng };
 

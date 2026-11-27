@@ -1,5 +1,5 @@
 /**
- * @shoreline/shared: everything the client and the server must agree on. Pure TypeScript: no DOM, no
+ * @speakersgarage/shared: everything the client and the server must agree on. Pure TypeScript: no DOM, no
  * three.js, no Node APIs, so the same code runs in the browser (prediction) and on the server (authority).
  */
 export * from './types';

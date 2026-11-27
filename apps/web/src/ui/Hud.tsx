@@ -44,7 +44,10 @@ export function Hud() {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 font-display">
       <div className="pointer-events-auto absolute left-3 top-3 flex flex-wrap items-center gap-2">
-        <div className="glass rounded-full px-4 py-2 text-lg font-bold text-pine shadow-lg">🌲 {name}</div>
+        <div className="glass flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4 text-lg font-bold text-pine shadow-lg" title="Speaker's Garage">
+          <img src="/favicon.svg" alt="Speaker's Garage" width={30} height={30} className="h-[30px] w-[30px]" />
+          {name}
+        </div>
         <NetBadge />
         <button className={btn} aria-label="Wardrobe" title="Wardrobe" onClick={() => setUi({ wardrobeOpen: true })}>
           👕

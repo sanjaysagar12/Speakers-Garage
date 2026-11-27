@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MAP_NAMES } from '@shoreline/shared';
+import { MAP_NAMES } from '@speakersgarage/shared';
 import { useGameStore } from '../store/useGameStore';
 import { serverHttp } from '../game/net/endpoints';
 
@@ -62,7 +62,7 @@ export function RoomPicker() {
       {online && (
         <>
           <label className="mb-2 block">
-            <span className="mb-1 block text-xs text-bark/70">Room (join one below, or type a new name to create it)</span>
+            <span className="mb-1 block text-xs text-bark/70">Room: join one where people are talking, or type a new name to start your own</span>
             <input
               value={room}
               onChange={(e) => setRoom(e.target.value)}
@@ -84,12 +84,12 @@ export function RoomPicker() {
                   onClick={() => setRoom(r.id)}
                   title={MAP_NAMES[r.map] ?? r.map}
                 >
-                  {r.id} · {r.players}/{capacity}
+                  {r.id} · {MAP_NAMES[r.map] ?? r.map} · {r.players}/{capacity}
                 </button>
               ))}
             </div>
           )}
-          {rooms && rooms.length === 0 && <p className="text-xs text-bark/60">No open rooms yet: entering creates “{room}”.</p>}
+          {rooms && rooms.length === 0 && <p className="text-xs text-bark/60">Nobody is here yet. Step in and “{room}” opens for whoever comes next.</p>}
         </>
       )}
     </fieldset>

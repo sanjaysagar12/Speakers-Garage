@@ -12,7 +12,7 @@ import {
   SphereGeometry,
   Vector3,
 } from 'three';
-import { pierLayout, type PierParams } from '@shoreline/shared';
+import { pierLayout, type PierParams } from '@speakersgarage/shared';
 import { ModelBuilder } from './util/builder';
 import { lathe, rng, range, rockGeo, sweep } from './util/geo';
 import { toon } from '../materials/toon';

@@ -1,4 +1,4 @@
-import { isMapId } from '@shoreline/shared';
+import { isMapId } from '@speakersgarage/shared';
 import { Room, JoinError, type RoomOptions, type RoomStats } from './Room';
 
 type Shared = Omit<RoomOptions, 'id' | 'mapId' | 'onEmpty'>;

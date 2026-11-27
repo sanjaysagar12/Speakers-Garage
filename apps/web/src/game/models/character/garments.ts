@@ -1,6 +1,6 @@
 import { BufferGeometry, Vector3, type Material, type Matrix4 } from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { smoothstep } from '@shoreline/shared';
+import { smoothstep } from '@speakersgarage/shared';
 import { ModelBuilder } from '../util/builder';
 import { slab, sweep } from '../util/geo';
 import { BONE_INDEX, SEGMENTS, ringAt, type BoneName, type EllipsoidSeg, type SegName, type TubeSeg } from './rig';

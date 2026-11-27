@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { EMOTES, NET } from './constants';
 
 /**
- * zod schemas for client -> server JSON messages. Server only (exported as '@shoreline/shared/schemas',
+ * zod schemas for client -> server JSON messages. Server only (exported as '@speakersgarage/shared/schemas',
  * not from the main entry, so the web bundle never includes zod). Anything that doesn't parse is dropped
  * and counted as a violation; contents are re-sanitized after parsing (names, chat, avatar whitelist).
  */

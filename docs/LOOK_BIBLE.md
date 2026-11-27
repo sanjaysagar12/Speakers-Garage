@@ -1,4 +1,4 @@
-# Shoreline — Look Bible & Technical Plan (iteration 4: the beach, in 3D)
+# Speaker's Garage — Look Bible & Technical Plan (iteration 4: the beach, in 3D)
 
 The reference images are a **style** reference only. Nothing is traced, no composition is copied, and no
 watermark or signature is reproduced. The primary reference is the flat graphic top-down beach poster;

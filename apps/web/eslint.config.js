@@ -1,3 +1,3 @@
-import { shorelineEslint } from '@shoreline/config/eslint';
+import { speakersGarageEslint } from '@speakersgarage/config/eslint';
 
-export default shorelineEslint({ browser: true, node: true, react: true, ignores: ['scripts/*.mjs'] });
+export default speakersGarageEslint({ browser: true, node: true, react: true, ignores: ['scripts/*.mjs'] });

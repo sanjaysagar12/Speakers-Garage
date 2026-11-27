@@ -1,4 +1,4 @@
-import type { AvatarConfig } from '@shoreline/shared';
+import type { AvatarConfig } from '@speakersgarage/shared';
 
 /** What survives a disconnect (and, later, a server restart): enough to resume a session. */
 export interface PlayerRecord {

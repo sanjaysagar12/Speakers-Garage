@@ -1,6 +1,6 @@
 {
  "id": "beach",
- "name": "Shoreline",
+ "name": "Beach",
  "tagline": "A turquoise bay, striped umbrellas and a lighthouse on the point.",
  "size": [
   120,
@@ -1314,7 +1314,7 @@
    "radius": 3,
    "kind": "bubble",
    "icon": "sign",
-   "title": "Welcome to Shoreline",
+   "title": "Welcome to the beach",
    "text": "Welcome to the bay! WASD to walk (it follows the camera), Shift to run, click to walk somewhere. Q/E or right-drag turns the view, F talks to a \u2726."
   },
   {

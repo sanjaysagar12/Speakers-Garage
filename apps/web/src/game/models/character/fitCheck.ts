@@ -1,5 +1,5 @@
 import { Matrix4, Vector3, type Mesh, type SkinnedMesh } from 'three';
-import { AVATAR_SLOTS, DEFAULT_AVATAR, rng } from '@shoreline/shared';
+import { AVATAR_SLOTS, DEFAULT_AVATAR, rng } from '@speakersgarage/shared';
 import type { AvatarConfig, Slot } from '../../../types';
 import { Character, type CharacterMotion } from './Character';
 import { hatFit, insideHat } from './hats';

@@ -17,7 +17,7 @@ import {
   type InputCommand,
   type ServerMessage,
   type Snapshot,
-} from '@shoreline/shared';
+} from '@speakersgarage/shared';
 import type { NetStatus, NetworkAdapter, Unsubscribe } from './NetworkAdapter';
 import { remotes } from './entities';
 export { serverHttp, serverUrl } from './endpoints';

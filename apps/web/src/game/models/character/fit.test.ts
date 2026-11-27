@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_AVATAR } from '@shoreline/shared';
+import { DEFAULT_AVATAR } from '@speakersgarage/shared';
 import { checkCombo, groupFailures, makeCombos } from './fitCheck';
 import { enforceConflicts, resolveFit, type Conflict } from './fitRules';
 import { visibleRanges } from './Character';

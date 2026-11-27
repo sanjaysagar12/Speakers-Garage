@@ -200,9 +200,9 @@ await B.screenshot({ path: `${out}/b-view.png` });
 
 // reconnect: B reloads the page and must come back as the same player
 const roster = await A.evaluate(() => window.__store.getState().net.players.map((p) => p.name).sort().join(','));
-const tokenBefore = await B.evaluate(() => sessionStorage.getItem('shoreline.resume.v1'));
+const tokenBefore = await B.evaluate(() => sessionStorage.getItem('speakersgarage.resume.v1'));
 await B.reload();
-const tokenAfterReload = await B.evaluate(() => sessionStorage.getItem('shoreline.resume.v1'));
+const tokenAfterReload = await B.evaluate(() => sessionStorage.getItem('speakersgarage.resume.v1'));
 console.log(`B token before reload ${tokenBefore}\nB token after reload  ${tokenAfterReload}`);
 if (process.env.MP_TRACE_CLOSE) console.log('B close calls:', await B.evaluate(() => sessionStorage.getItem('closelog')));
 await B.waitForFunction(() => window.__store);

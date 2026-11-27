@@ -1,8 +1,8 @@
 # Game server image (build from the repository root):
-#   docker build -f apps/server/Dockerfile -t shoreline-server .
-#   docker run -p 8787:8787 -e ALLOWED_ORIGINS=https://play.example.com shoreline-server
+#   docker build -f apps/server/Dockerfile -t speakers-garage .
+#   docker run -p 8787:8787 -e ALLOWED_ORIGINS=https://play.example.com speakers-garage
 
-# ---- build: install the workspace, bundle the server (tsup inlines @shoreline/shared)
+# ---- build: install the workspace, bundle the server (tsup inlines @speakersgarage/shared)
 FROM node:22-alpine AS build
 WORKDIR /repo
 RUN corepack enable
@@ -10,12 +10,12 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/config/package.json packages/config/
 COPY packages/shared/package.json packages/shared/
 COPY apps/server/package.json apps/server/
-RUN pnpm install --frozen-lockfile --filter @shoreline/server...
+RUN pnpm install --frozen-lockfile --filter @speakersgarage/server...
 COPY packages/config packages/config
 COPY packages/shared packages/shared
 COPY apps/server apps/server
-RUN pnpm --filter @shoreline/server build \
- && pnpm --filter @shoreline/server deploy --prod --legacy /out \
+RUN pnpm --filter @speakersgarage/server build \
+ && pnpm --filter @speakersgarage/server deploy --prod --legacy /out \
  && cp -r apps/server/dist /out/dist
 
 # ---- run: production dependencies + the bundle, as a non-root user

@@ -12,7 +12,7 @@ import {
   type InputCommand,
   type ServerMessage,
   type Snapshot,
-} from '@shoreline/shared';
+} from '@speakersgarage/shared';
 import { buildApp } from '../src/app';
 import { loadEnv } from '../src/env';
 import type { Transport } from '../src/rooms/ServerPlayer';

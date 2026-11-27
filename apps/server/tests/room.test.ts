@@ -3,7 +3,7 @@
  * walking into water / through props), reconnect window expiry, voice relay distance checks.
  */
 import { describe, expect, it } from 'vitest';
-import { NET, SIM, STEP_DT, VOICE, createMapData, quantizeAxis, sanitizeAvatar, standHeight } from '@shoreline/shared';
+import { NET, SIM, STEP_DT, VOICE, createMapData, quantizeAxis, sanitizeAvatar, standHeight } from '@speakersgarage/shared';
 import { Room } from '../src/rooms/Room';
 import { MemoryPlayerStore } from '../src/store/PlayerStore';
 import { FakeTransport, cmds } from './helpers';

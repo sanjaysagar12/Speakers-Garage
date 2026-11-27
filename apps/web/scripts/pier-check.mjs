@@ -16,7 +16,7 @@ page.on('pageerror', (e) => errors.push(e.message));
 await page.goto(server.resolvedUrls.local[0]);
 await page.waitForFunction(() => window.__store, null, { timeout: 120000 });
 await page.evaluate(() => window.__store.getState().setUi({ quality: 'low' }));
-await page.click('text=Enter the valley');
+await page.click('text=Enter the garage');
 await page.waitForFunction(() => window.__game, null, { timeout: 240000 });
 await page.evaluate(() => window.__store.getState().setUi({ hintOpen: false, debug: true }));
 const pier = (await page.evaluate(() => window.__game.pier()))[0];

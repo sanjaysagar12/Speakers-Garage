@@ -1,4 +1,4 @@
-import { shorelineEslint } from '@shoreline/config/eslint';
+import { speakersGarageEslint } from '@speakersgarage/config/eslint';
 
 // pure TS: no browser or node globals in src (tests and configs may use node)
-export default shorelineEslint({ node: true });
+export default speakersGarageEslint({ node: true });

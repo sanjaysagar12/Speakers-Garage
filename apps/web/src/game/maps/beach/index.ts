@@ -1,4 +1,4 @@
-import { createBeachMapData, type BeachData } from '@shoreline/shared';
+import { createBeachMapData, type BeachData } from '@speakersgarage/shared';
 import { createBeachGround } from './BeachGround';
 import type { GameMap } from '../types';
 import { devLog } from '../../../util/devlog';

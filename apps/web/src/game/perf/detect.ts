@@ -1,4 +1,5 @@
 import { QUALITY_ORDER, type Quality } from '../config';
+import { KEYS } from '../../storage';
 
 /**
  * Startup tier detection: hardware hints (cores, memory, GPU string, mobile) + a ~1 s benchmark that
@@ -18,7 +19,7 @@ export interface DetectResult {
   reason: string;
 }
 
-const KEY = 'shoreline.detect.v1';
+const KEY = KEYS.detect;
 
 const BENCH_FRAG = `#version 300 es
 precision highp float;

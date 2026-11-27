@@ -1,7 +1,8 @@
 import { createStore } from 'zustand/vanilla';
+import { KEYS } from '../storage';
 import type { AvatarConfig, DialogContent, NearbyInteraction } from '../types';
-import { DEFAULT_AVATAR, sanitizeAvatar } from '@shoreline/shared';
-import { DEFAULT_MAP, isMapId } from '@shoreline/shared';
+import { DEFAULT_AVATAR, sanitizeAvatar } from '@speakersgarage/shared';
+import { DEFAULT_MAP, isMapId } from '@speakersgarage/shared';
 import { QUALITY_ORDER, type Quality, type QualityMode } from '../game/config';
 import type { NetStatus } from '../game/net/NetworkAdapter';
 
@@ -99,8 +100,7 @@ export interface GameState {
   addChat: (line: Omit<ChatLine, 'key' | 'at'>) => void;
 }
 
-const STORAGE_KEY = 'shoreline.profile.v2';
-const LEGACY_KEY = 'vinland.profile.v1';
+const STORAGE_KEY = KEYS.profile;
 
 interface Saved {
   online: boolean;
@@ -123,7 +123,7 @@ const detectTouch = (): boolean => {
 function loadProfile(): Saved {
   const fallback: Saved = { online: true, roomId: 'beach', name: '', avatar: { ...DEFAULT_AVATAR }, mapId: DEFAULT_MAP, qualityMode: 'auto', fpsCap: 60 };
   try {
-    const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return fallback;
     // older saves stored an automatic default under `quality` (there was no setting); they start on auto
     const p = JSON.parse(raw) as Partial<{ online: boolean; roomId: string; name: string; avatar: Record<string, unknown>; mapId: string; qualityMode: string; fpsCap: number }>;
@@ -154,7 +154,7 @@ const initial = loadProfile();
 /** Blocked players last for the browser session (their ids are per room, so this is per tab). */
 function loadBlocked(): number[] {
   try {
-    const v = JSON.parse(sessionStorage.getItem('shoreline.blocked.v1') ?? '[]') as unknown;
+    const v = JSON.parse(sessionStorage.getItem(KEYS.blocked) ?? '[]') as unknown;
     return Array.isArray(v) ? v.filter((x): x is number => Number.isInteger(x)) : [];
   } catch {
     return [];
@@ -162,7 +162,7 @@ function loadBlocked(): number[] {
 }
 export function saveBlocked(ids: number[]): void {
   try {
-    sessionStorage.setItem('shoreline.blocked.v1', JSON.stringify(ids));
+    sessionStorage.setItem(KEYS.blocked, JSON.stringify(ids));
   } catch {
     /* storage blocked */
   }

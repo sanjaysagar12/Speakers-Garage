@@ -14,7 +14,7 @@ import { Governor } from '../perf/Governor';
 import { frameStats } from '../perf/stats';
 import { FrameDriver } from '../perf/FrameDriver';
 import { gameStore } from '../../store/gameStore';
-import { deckAt } from '@shoreline/shared';
+import { deckAt } from '@speakersgarage/shared';
 import { useGameStore } from '../../store/useGameStore';
 import { RemotePlayers } from './Remote';
 import { Nameplates } from './Nameplates';

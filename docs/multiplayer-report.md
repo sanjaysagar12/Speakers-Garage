@@ -5,7 +5,7 @@ headless Chromium with **software rendering (SwiftShader)**: each browser runs a
 its input in bursts, which is far worse than a real device. That makes them a stress test for smoothing,
 not a picture of normal play.
 
-## Server (load test: `pnpm --filter @shoreline/server loadtest`)
+## Server (load test: `pnpm --filter @speakersgarage/server loadtest`)
 
 Bots random-walk in one room, send input exactly like the client (3 commands per 50 ms) and decode every
 snapshot. The server is a separate process (production mode), 20 Hz tick, 40 m area of interest.
@@ -83,7 +83,7 @@ two moving frames.)
 
   Differences are within run-to-run noise. The landing chunk is 7.8 KB gzip (5.6 before; the room
   picker). The world chunk grew by ~12 KB gzip (networking, voice, social UI) and is still loaded only
-  on entry. zod is not in the web bundle (the server-only schemas live in `@shoreline/shared/schemas`).
+  on entry. zod is not in the web bundle (the server-only schemas live in `@speakersgarage/shared/schemas`).
 - A fresh clone passes `pnpm install --frozen-lockfile && pnpm build && pnpm typecheck && pnpm lint && pnpm test`.
 
 ## Known limitations

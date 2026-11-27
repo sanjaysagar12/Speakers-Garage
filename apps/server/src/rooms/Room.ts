@@ -29,7 +29,7 @@ import {
   type InputCommand,
   type MapData,
   type ServerMessage,
-} from '@shoreline/shared';
+} from '@speakersgarage/shared';
 import { ServerPlayer, type Transport } from './ServerPlayer';
 import { findSpawn } from './spawn';
 import type { PlayerStore } from '../store/PlayerStore';

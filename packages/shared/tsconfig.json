@@ -1,5 +1,5 @@
 {
-  "extends": "@shoreline/config/tsconfig.base.json",
+  "extends": "@speakersgarage/config/tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
     "rootDir": ".",

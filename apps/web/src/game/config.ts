@@ -1,4 +1,4 @@
-import { DEG, SIM, VOICE } from '@shoreline/shared';
+import { DEG, SIM, VOICE } from '@speakersgarage/shared';
 
 /**
  * Single source of truth for tunable constants. World units are metres: x = east, z = south, y = up.

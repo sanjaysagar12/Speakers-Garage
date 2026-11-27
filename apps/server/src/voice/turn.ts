@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto';
-import type { IceServerInfo } from '@shoreline/shared';
+import type { IceServerInfo } from '@speakersgarage/shared';
 import type { Env } from '../env';
 
 /**

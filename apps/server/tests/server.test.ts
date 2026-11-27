@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { NET, PROTOCOL_VERSION, fromFixed } from '@shoreline/shared';
+import { NET, PROTOCOL_VERSION, fromFixed } from '@speakersgarage/shared';
 import { connect, joinMsg, sendCommands, sleep, startServer } from './helpers';
 
 let srv: Awaited<ReturnType<typeof startServer>>;
