@@ -133,7 +133,7 @@ export function World({ map, quality }: { map: GameMap; quality: Quality }) {
       <color attach="background" args={[map.background]} />
       <WorldClock />
       <map.Ground />
-      <Props map={map} density={q.propDensity} />
+      <Props map={map} q={q} />
       <Player />
       <CameraRig />
       <Governor />

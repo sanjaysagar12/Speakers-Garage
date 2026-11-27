@@ -205,7 +205,7 @@ export function slab(outline: Array<[number, number]>, depth: number, bevel = 0.
     bevelEnabled: bevel > 0,
     bevelSize: bevel,
     bevelThickness: bevel,
-    bevelSegments: 2,
+    bevelSegments: 1,
     curveSegments: 6,
   });
   g.rotateX(-Math.PI / 2);

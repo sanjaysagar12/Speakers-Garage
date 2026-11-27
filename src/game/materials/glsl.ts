@@ -14,6 +14,7 @@ uniform float uGradeBaked;
 `;
 
 export const NOISE_GLSL = /* glsl */ `
+uniform sampler2D uNoise;
 float hash12(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
   p3 += dot(p3, p3.yzx + 33.33);
@@ -25,14 +26,12 @@ vec2 hash22(vec2 p) {
   return fract((p3.xx + p3.yz) * p3.zy);
 }
 float vnoise(vec2 p) {
+  // value noise from the shared 256^2 lattice texture: smoothstep-remapped coordinates make the hardware
+  // bilinear filter interpolate like the old hash version, with one fetch instead of four hashes
   vec2 i = floor(p);
   vec2 f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  float a = hash12(i);
-  float b = hash12(i + vec2(1.0, 0.0));
-  float c = hash12(i + vec2(0.0, 1.0));
-  float d = hash12(i + vec2(1.0, 1.0));
-  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  f = f * f * (3.0 - 2.0 * f);
+  return texture2D(uNoise, (i + f + 0.5) / 256.0).r;
 }
 float fbm(vec2 p) {
   float v = 0.0;

@@ -19,32 +19,35 @@ function alignY(a: Vector3, b: Vector3, scaleXZ = 1): Matrix4 {
 export interface PalmParams {
   variant?: 0 | 1 | 2;
   height?: number;
+  /** 0 = full detail, 1 = distant (same silhouette: same random sequence, coarser meshes, no coconuts) */
+  lod?: 0 | 1;
 }
 
-function palmTrunk(b: ModelBuilder, r: () => number, base: Vector3, height: number, lean: number, leanDir: number, rBase: number): Vector3 {
+function palmTrunk(b: ModelBuilder, base: Vector3, height: number, lean: number, leanDir: number, rBase: number, lod: number): Vector3 {
   const dir = new Vector3(Math.cos(leanDir), 0, Math.sin(leanDir));
   const at = (t: number) =>
     base
       .clone()
       .addScaledVector(dir, lean * height * Math.pow(t, 1.7))
       .add(new Vector3(0, height * t, 0));
-  const segs = Math.round(height / 0.34);
+  const segs = Math.round(height / (lod ? 0.7 : 0.34));
   // a base flare that sinks into the sand so the palm never floats
-  b.add(lathe([[rBase * 1.9, -0.35], [rBase * 1.55, 0.02], [rBase * 1.12, 0.22], [rBase, 0.42]], 10), {
+  b.add(lathe([[rBase * 1.9, -0.35], [rBase * 1.55, 0.02], [rBase * 1.12, 0.22], [rBase, 0.42]], lod ? 6 : 8), {
     color: PAL.trunkDark,
     pos: [base.x, base.y, base.z],
   });
-  const unit = lathe([[1.0, 0], [1.12, 0.12], [0.98, 0.62], [0.86, 1.0]], 9);
+  const unit = lathe([[1.0, 0], [1.12, 0.12], [0.98, 0.62], [0.86, 1.0]], lod ? 5 : 7);
   for (let i = 0; i < segs; i++) {
     const t0 = i / segs;
     const t1 = (i + 1) / segs;
-    const rad = rBase * (1 - 0.42 * t0) * range(r, 0.96, 1.04);
+    // per-segment jitter from the index (not the shared rng) so every LOD keeps the same random sequence
+    const rad = rBase * (1 - 0.42 * t0) * (1 + 0.04 * Math.sin(i * 12.9898 + height * 7.31));
     b.add(unit, { color: i % 2 ? PAL.trunk : PAL.trunkDark, matrix: alignY(at(t0), at(t1).add(new Vector3(0, 0.02, 0)), rad) });
   }
   return at(1);
 }
 
-function palmCrown(b: ModelBuilder, r: () => number, top: Vector3, fronds: number, size: number): void {
+function palmCrown(b: ModelBuilder, r: () => number, top: Vector3, fronds: number, size: number, lod: number): void {
   const frondMat = toon({ back: PAL.palmUnder, sway: 0.55 });
   const a0 = r() * Math.PI * 2;
   for (let k = 0; k < fronds; k++) {
@@ -56,11 +59,12 @@ function palmCrown(b: ModelBuilder, r: () => number, top: Vector3, fronds: numbe
     const pts = [p(0, 0), p(0.28, 0.12 + rise * 0.22), p(0.56, 0.08 + rise * 0.16), p(0.8, -0.1 + rise * 0.02), p(1.0, -0.36 + rise * 0.06)];
     const teeth = 13;
     const geo = ribbon(pts, (t) => (t < 0.08 ? 0.03 : 0.46 * size * 0.22 * Math.sin(Math.PI * Math.pow(t, 0.7)) * (1 - t * 0.2)), {
-      segs: 40,
-      across: 2,
+      // 2 segments per serration tooth at full detail; distant palms drop the serration
+      segs: lod ? 10 : 26,
+      across: 1,
       fold: (t) => 0.07 * size * 0.22 * Math.sin(Math.PI * t),
       // serrated leaflet edge: a sawtooth that cuts deeper toward the tip
-      edge: (t, side) => -(0.34 + 0.3 * t) * (((t * teeth + (side > 0 ? 0 : 0.5)) % 1) ** 1.6),
+      edge: lod ? undefined : (t, side) => -(0.34 + 0.3 * t) * (((t * teeth + (side > 0 ? 0 : 0.5)) % 1) ** 1.6),
     });
     b.add(geo, {
       color: k % 2 ? PAL.palmLight : PAL.palmMid,
@@ -70,13 +74,16 @@ function palmCrown(b: ModelBuilder, r: () => number, top: Vector3, fronds: numbe
     geo.dispose();
   }
   // crown knot + coconuts
-  b.add(ellipsoid(0.22, 0.2, 0.22, 10, 8), { color: PAL.trunkDark, pos: [top.x, top.y - 0.08, top.z] });
+  b.add(ellipsoid(0.22, 0.2, 0.22, lod ? 6 : 8, lod ? 5 : 6), { color: PAL.trunkDark, pos: [top.x, top.y - 0.08, top.z] });
   const nuts = 3 + Math.floor(r() * 3);
   for (let i = 0; i < nuts; i++) {
+    // two draws per nut at every LOD, so LOD0 and LOD1 stay the same tree
     const a = r() * Math.PI * 2;
-    b.add(ellipsoid(0.13, 0.15, 0.13, 9, 7), {
+    const dy = r() * 0.08;
+    if (lod) continue;
+    b.add(ellipsoid(0.13, 0.15, 0.13, 8, 6), {
       color: i % 2 ? PAL.coconut : '#8C6438',
-      pos: [top.x + Math.cos(a) * 0.17, top.y - 0.2 - r() * 0.08, top.z + Math.sin(a) * 0.17],
+      pos: [top.x + Math.cos(a) * 0.17, top.y - 0.2 - dy, top.z + Math.sin(a) * 0.17],
     });
   }
 }
@@ -84,23 +91,24 @@ function palmCrown(b: ModelBuilder, r: () => number, top: Vector3, fronds: numbe
 export function buildPalm(p: PalmParams = {}, seed = 1): Group {
   const r = rng(seed);
   const variant = p.variant ?? (Math.floor(r() * 3) as 0 | 1 | 2);
+  const lod = p.lod ?? 0;
   const b = new ModelBuilder();
   const leanDir = r() * Math.PI * 2;
   if (variant === 0) {
     const h = p.height ?? range(r, 5.8, 7.2);
-    const top = palmTrunk(b, r, new Vector3(0, 0, 0), h, range(r, 0.22, 0.36), leanDir, 0.2);
-    palmCrown(b, r, top, 10 + Math.floor(r() * 3), 3.1);
+    const top = palmTrunk(b, new Vector3(0, 0, 0), h, range(r, 0.22, 0.36), leanDir, 0.2, lod);
+    palmCrown(b, r, top, 10 + Math.floor(r() * 3), 3.1, lod);
   } else if (variant === 1) {
     const h = p.height ?? range(r, 3.6, 4.6);
-    const top = palmTrunk(b, r, new Vector3(0, 0, 0), h, range(r, 0.04, 0.1), leanDir, 0.22);
-    palmCrown(b, r, top, 9 + Math.floor(r() * 2), 2.6);
+    const top = palmTrunk(b, new Vector3(0, 0, 0), h, range(r, 0.04, 0.1), leanDir, 0.22, lod);
+    palmCrown(b, r, top, 9 + Math.floor(r() * 2), 2.6, lod);
   } else {
     // twin palm: two trunks diverging from one root
     const h = p.height ?? range(r, 5.2, 6.4);
-    const top1 = palmTrunk(b, r, new Vector3(0.12, 0, 0), h, range(r, 0.42, 0.58), leanDir, 0.18);
-    const top2 = palmTrunk(b, r, new Vector3(-0.12, 0, 0.05), h * 0.78, range(r, 0.3, 0.42), leanDir + Math.PI * range(r, 0.6, 0.9), 0.17);
-    palmCrown(b, r, top1, 9 + Math.floor(r() * 3), 2.9);
-    palmCrown(b, r, top2, 8 + Math.floor(r() * 2), 2.5);
+    const top1 = palmTrunk(b, new Vector3(0.12, 0, 0), h, range(r, 0.42, 0.58), leanDir, 0.18, lod);
+    const top2 = palmTrunk(b, new Vector3(-0.12, 0, 0.05), h * 0.78, range(r, 0.3, 0.42), leanDir + Math.PI * range(r, 0.6, 0.9), 0.17, lod);
+    palmCrown(b, r, top1, 9 + Math.floor(r() * 3), 2.9, lod);
+    palmCrown(b, r, top2, 8 + Math.floor(r() * 2), 2.5, lod);
   }
   return b.build('palm');
 }
@@ -225,7 +233,7 @@ export function buildFlower(color: string, seed = 1): ModelBuilder {
     b.add(new CylinderGeometry(0.008, 0.01, h, 4), { color: PAL.grassDark, mat, pos: [x, h / 2, z] });
     for (let k = 0; k < 5; k++) {
       const pa = (k / 5) * Math.PI * 2;
-      b.add(ellipsoid(0.035, 0.012, 0.022, 6, 4), {
+      b.add(ellipsoid(0.035, 0.012, 0.022, 5, 3), {
         color,
         mat,
         pos: [x + Math.cos(pa) * 0.03, h, z + Math.sin(pa) * 0.03],
@@ -243,14 +251,12 @@ export function buildStarfish(color: string = PAL.orange, seed = 1): ModelBuilde
   const r = rng(seed);
   const b = new ModelBuilder();
   const s = range(r, 0.8, 1.15);
-  b.add(slab(starOutline(5, 0.17 * s, 0.06 * s, 4), 0.025, 0.012), { color });
+  b.add(slab(starOutline(5, 0.17 * s, 0.06 * s, 3), 0.025, 0.012), { color });
   // raised dotted texture
   for (let k = 0; k < 5; k++) {
     const a = (k / 5) * Math.PI * 2 + Math.PI / 2;
-    for (let j = 1; j <= 3; j++) {
-      const d = 0.035 * j * s;
-      b.add(new IcosahedronGeometry(0.009, 0), { color: '#9C3B2E', pos: [Math.cos(a) * d, 0.04, -Math.sin(a) * d] });
-    }
+    const d = 0.07 * s;
+    b.add(new IcosahedronGeometry(0.009, 0), { color: '#9C3B2E', pos: [Math.cos(a) * d, 0.04, -Math.sin(a) * d] });
   }
   return b;
 }

@@ -1,5 +1,22 @@
-import { Color, Vector3, Vector4 } from 'three';
+import { Color, DataTexture, LinearFilter, RedFormat, RepeatWrapping, Vector3, Vector4 } from 'three';
 import { GAME_CONFIG } from '../config';
+
+/** 256x256 tileable random lattice, sampled with smoothstep-remapped bilinear filtering = value noise in one fetch. */
+function makeNoiseTexture(): DataTexture {
+  const N = 256;
+  const data = new Uint8Array(N * N);
+  let s = 1234567;
+  for (let i = 0; i < data.length; i++) {
+    s = (Math.imul(s, 1103515245) + 12345) >>> 0;
+    data[i] = s >>> 24;
+  }
+  const t = new DataTexture(data, N, N, RedFormat);
+  t.wrapS = t.wrapT = RepeatWrapping;
+  t.magFilter = t.minFilter = LinearFilter;
+  t.generateMipmaps = false;
+  t.needsUpdate = true;
+  return t;
+}
 
 /**
  * Uniform objects shared by reference across every world material, so one write per frame updates
@@ -23,6 +40,8 @@ export const G = {
   uWarm: { value: 0 },
   /** 1 when there is no post pass: the warm colour grade is applied inside the world shaders instead */
   uGradeBaked: { value: 0 },
+  /** shared noise lattice (replaces procedural value noise in every world shader) */
+  uNoise: { value: makeNoiseTexture() },
 };
 
 export type GlobalUniforms = typeof G;

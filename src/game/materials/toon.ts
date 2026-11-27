@@ -8,6 +8,7 @@ import {
   UniformsLib,
   UniformsUtils,
   type ColorRepresentation,
+  type Material,
   type Mesh,
   type Object3D,
   Vector3,
@@ -55,6 +56,8 @@ export interface ToonOpts {
   grain?: number;
   /** enable the per-material uSwing offset (unique materials only) */
   swing?: boolean;
+  /** geometry merged from several props: sway phase comes from the aOrigin attribute */
+  merged?: boolean;
 }
 
 const VERT = /* glsl */ `
@@ -66,6 +69,10 @@ ${SWAY_GLSL}
 attribute vec3 aPat;
 #if defined(SWAY) || defined(SWING)
 attribute float aSway;
+#endif
+#ifdef MERGED
+/** world origin of the prop this vertex came from (props merged per chunk keep their own sway phase) */
+attribute vec3 aOrigin;
 #endif
 #ifdef SWAY
 uniform float uSwayAmp;
@@ -92,7 +99,12 @@ void main() {
   #else
   float sw = aSway;
   #endif
-  transformed += inverse(mat3(M)) * windDisp(M[3].xyz, sw, uSwayAmp);
+  #ifdef MERGED
+  vec3 swOrigin = aOrigin;
+  #else
+  vec3 swOrigin = M[3].xyz;
+  #endif
+  transformed += inverse(mat3(M)) * windDisp(swOrigin, sw, uSwayAmp);
   #endif
   #ifdef SWING
   // movement-driven secondary motion (hair, scarf tails): a local-space offset weighted by aSway
@@ -235,6 +247,7 @@ function makeToon(opts: ToonOpts): ShaderMaterial {
   if (opts.sway) defines.SWAY = 1;
   if (opts.swayByHeight) defines.SWAY_BY_HEIGHT = 1;
   if (opts.swing) defines.SWING = 1;
+  if (opts.merged) defines.MERGED = 1;
 
   const uniforms = {
     ...UniformsUtils.clone(UniformsLib.lights),
@@ -264,12 +277,20 @@ function makeToon(opts: ToonOpts): ShaderMaterial {
     transparent: !!opts.transparent,
     depthWrite: !opts.transparent,
   });
+  m.userData.toonOpts = opts;
   return m;
 }
 
+/** The chunk-merge variant of a cached toon material (same look; sway phase from aOrigin), or null. */
+export function mergedVariant(mat: Material): ShaderMaterial | null {
+  const opts = mat.userData?.toonOpts as ToonOpts | undefined;
+  if (!opts) return null;
+  return opts.sway ? toon({ ...opts, merged: true }) : (mat as ShaderMaterial);
+}
+
 /** Shadow-pass material that applies the same wind displacement, so swaying things cast swaying shadows. */
-function swayDepth(amp: number, byHeight = 0): MeshDepthMaterial {
-  const key = `${amp}:${byHeight}`;
+function swayDepth(amp: number, byHeight = 0, merged = false): MeshDepthMaterial {
+  const key = `${amp}:${byHeight}:${merged ? 'm' : ''}`;
   const hit = depthCache.get(key);
   if (hit) return hit;
   const m = new MeshDepthMaterial({ depthPacking: RGBADepthPacking });
@@ -278,7 +299,7 @@ function swayDepth(amp: number, byHeight = 0): MeshDepthMaterial {
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
-        `#include <common>\n${GLOBALS_GLSL}\n${SWAY_GLSL}\nattribute float aSway;\nuniform float uSwayAmp;\nuniform float uSwayH;`,
+        `#include <common>\n${GLOBALS_GLSL}\n${SWAY_GLSL}\nattribute float aSway;\n${merged ? 'attribute vec3 aOrigin;' : ''}\nuniform float uSwayAmp;\nuniform float uSwayH;`,
       )
       .replace(
         '#include <begin_vertex>',
@@ -288,7 +309,7 @@ function swayDepth(amp: number, byHeight = 0): MeshDepthMaterial {
         swM = modelMatrix * instanceMatrix;
         #endif
         float swW = ${byHeight ? 'max(position.y, 0.0) * uSwayH' : 'aSway'};
-        transformed += inverse(mat3(swM)) * windDisp(swM[3].xyz, swW, uSwayAmp);`,
+        transformed += inverse(mat3(swM)) * windDisp(${merged ? 'aOrigin' : 'swM[3].xyz'}, swW, uSwayAmp);`,
       );
   };
   m.customProgramCacheKey = () => `swaydepth:${key}`;
@@ -305,7 +326,7 @@ export function attachSwayDepth(root: Object3D): void {
     if (mat?.defines?.SWAY) {
       const amp = (mat.uniforms.uSwayAmp?.value as number) ?? 0;
       const h = (mat.uniforms.uSwayH?.value as number) ?? 0;
-      mesh.customDepthMaterial = swayDepth(amp, mat.defines.SWAY_BY_HEIGHT ? h : 0);
+      mesh.customDepthMaterial = swayDepth(amp, mat.defines.SWAY_BY_HEIGHT ? h : 0, !!mat.defines.MERGED);
     }
   });
 }
