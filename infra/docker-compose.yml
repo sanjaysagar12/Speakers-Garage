@@ -1,0 +1,38 @@
+# Local / single-VM infrastructure.
+#
+#   docker compose -f infra/docker-compose.yml up coturn                 # TURN/STUN only (voice across networks)
+#   docker compose -f infra/docker-compose.yml --profile server up       # game server + TURN
+#
+# coturn uses host networking: a TURN server needs a large UDP port range, and Docker's port mapping of
+# hundreds of UDP ports is slow and breaks the relayed addresses. Ports used: 3478 (udp+tcp), 5349 (tcp,
+# TLS), 49160-49400 (udp relay range). See README "Deployment".
+services:
+  coturn:
+    image: coturn/coturn:4.6.3
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+      # - ./coturn/certs:/etc/coturn/certs:ro   # for turns: (TLS)
+
+  server:
+    profiles: [server]
+    build:
+      context: ..
+      dockerfile: apps/server/Dockerfile
+    restart: unless-stopped
+    ports:
+      - '8787:8787'
+    environment:
+      NODE_ENV: production
+      PORT: 8787
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173}
+      TURN_URLS: ${TURN_URLS:-turn:127.0.0.1:3478?transport=udp,turn:127.0.0.1:3478?transport=tcp}
+      TURN_SECRET: ${TURN_SECRET:-CHANGE_ME_LONG_RANDOM_SECRET}
+    depends_on: [coturn]
+
+  # Later, to run several server processes behind a load balancer (see README "Scaling"):
+  # redis:
+  #   image: redis:7.4-alpine
+  #   restart: unless-stopped
+  #   ports: ['6379:6379']

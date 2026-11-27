@@ -7,9 +7,13 @@
 //   - smoothness of B as seen by A: per-frame step sizes, jerk (frame-to-frame change of velocity), hitches
 //   - how far A's view of B lags B's own position (render delay)
 //   - B's prediction error (reconciliation corrections) and the server-side truth
-// Optional network simulation on B's and A's connections via CDP (latency/jitter in ms, loss in %).
-// NOTE: WebSockets run over TCP: "loss" becomes retransmission delay, which is what real users see.
+// Optional network simulation for both players: a TCP proxy between the dev server and the game server
+// adds latency (added round trip, split over both directions), jitter (random extra one-way delay) and
+// loss. DevTools throttling does not apply to WebSocket frames, hence the proxy. WebSockets run over TCP,
+// so a lost segment is retransmitted: modelled as a ~200 ms+ stall of that direction (head-of-line
+// blocking), which is what players on a lossy network actually experience.
 import { spawn } from 'node:child_process';
+import { createServer as createTcpServer, connect as tcpConnect } from 'node:net';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createServer } from 'vite';
@@ -63,6 +67,38 @@ const waitHealth = async () => {
   throw new Error('server did not start');
 };
 await waitHealth();
+// TCP proxy with latency / jitter / loss (order-preserving per direction)
+let proxyStats = { chunks: 0, stalls: 0 };
+if (latency || jitter || loss) {
+  const delayFor = () => latency / 2 + Math.random() * jitter;
+  const pipe = (from, to) => {
+    let lastAt = 0;
+    from.on('data', (chunk) => {
+      proxyStats.chunks++;
+      let at = Date.now() + delayFor();
+      if (loss && Math.random() < loss / 100) {
+        at += Math.max(200, latency * 1.5); // retransmission timeout
+        proxyStats.stalls++;
+      }
+      at = Math.max(at, lastAt); // TCP delivers in order
+      lastAt = at;
+      setTimeout(() => !to.destroyed && to.write(chunk), at - Date.now());
+    });
+    from.on('close', () => setTimeout(() => to.destroy(), Math.max(0, lastAt - Date.now()) + 5));
+    from.on('error', () => to.destroy());
+  };
+  await new Promise((res) =>
+    createTcpServer((client) => {
+        client.setNoDelay(true);
+        const up = tcpConnect(8787, '127.0.0.1');
+        up.setNoDelay(true);
+        pipe(client, up);
+        pipe(up, client);
+    }).listen(8788, '127.0.0.1', res),
+  );
+  process.env.GAME_SERVER = 'http://127.0.0.1:8788';
+  console.log(`network: +${latency} ms RTT, up to +${jitter} ms jitter per direction, ${loss}% loss`);
+}
 const vite = await createServer({ server: { port: 5196, host: '127.0.0.1', strictPort: true }, logLevel: 'error' });
 await vite.listen();
 const url = vite.resolvedUrls.local[0];
@@ -85,11 +121,6 @@ async function player(name) {
     });
   page.on('pageerror', (e) => errors.push(`${name}: ${e.message}`));
   page.on('console', (m) => m.type() === 'error' && !/toArray/.test(m.text()) && errors.push(`${name} console: ${m.text()}`));
-  if (latency || jitter || loss) {
-    const cdp = await ctx.newCDPSession(page);
-    await cdp.send('Network.enable');
-    await cdp.send('Network.emulateNetworkConditions', { offline: false, latency, downloadThroughput: -1, uploadThroughput: -1, packetLoss: loss, packetQueueLength: 0, packetReordering: false });
-  }
   await page.goto(url);
   await page.waitForFunction(() => window.__store);
   await page.evaluate((n) => {
@@ -189,6 +220,7 @@ for (let i = 1; i < samples.length; i++) {
   steps.push({ dt, v: Math.hypot(samples[i].x - samples[i - 1].x, samples[i].z - samples[i - 1].z) / dt });
 }
 const moving = steps.filter((s) => s.v > 0.3);
+const maxRendered = Math.max(0, ...steps.map((s) => s.v));
 const vs = moving.map((s) => s.v).sort((a, b) => a - b);
 const pct = (a, p) => (a.length ? a[Math.min(a.length - 1, Math.floor(a.length * p))] : 0);
 // a "hitch": the rendered speed jumps above 2x run speed or drops to ~0 while moving between moving frames
@@ -202,6 +234,7 @@ await landing.goto(url);
 await landing.waitForTimeout(2500);
 await landing.screenshot({ path: `${out}/landing-rooms.png` });
 const result = {
+  proxy: proxyStats,
   chat: chatLine,
   bEmoteSeenByA: bAnim >> 4,
   resumedSameId: bId === bIdAfter,
@@ -211,6 +244,7 @@ const result = {
   bWalkedMeters: +bDist.toFixed(2),
   remoteSpeedAsSeenByA: { median: +pct(vs, 0.5).toFixed(2), p05: +pct(vs, 0.05).toFixed(2), p95: +pct(vs, 0.95).toFixed(2) },
   hitches,
+  maxRenderedSpeed: +maxRendered.toFixed(2),
   interpolationDelayMs: Math.round(net.A.delay),
   jitterMs: +net.A.jitter.toFixed(1),
   rttMs: { A: Math.round(net.A.rtt), B: Math.round(net.B.rtt) },

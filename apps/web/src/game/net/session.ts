@@ -1,6 +1,7 @@
 import { gameStore, type RosterEntry } from '../../store/gameStore';
 import { LocalAdapter, type NetworkAdapter, type NetStatus } from './NetworkAdapter';
-import { WebSocketAdapter, serverUrl } from './WebSocketAdapter';
+import { WebSocketAdapter } from './WebSocketAdapter';
+import { serverUrl } from './endpoints';
 import { remotes } from './entities';
 import { devLog } from '../../util/devlog';
 

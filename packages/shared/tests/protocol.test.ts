@@ -13,7 +13,6 @@ import {
   fromHeading,
   fromSpeedByte,
   newSnapshot,
-  parseClientMessage,
   quantizeEntity,
   sanitizeAvatar,
   sanitizeChat,
@@ -25,6 +24,7 @@ import {
   type InputCommand,
 } from '../src';
 import { rng } from '../src/util/rng';
+import { parseClientMessage } from '../src/net/schemas';
 
 describe('binary codec', () => {
   it('round-trips input batches (sequence numbers wrap)', () => {

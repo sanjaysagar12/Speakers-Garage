@@ -16,8 +16,8 @@ export const NET = {
   /** anti speed-hack: commands per second a player may spend (token bucket), plus burst */
   commandRate: 60,
   commandBurst: 20,
-  /** commands queued on the server per player before new ones are dropped */
-  maxQueuedCommands: 30,
+  /** commands queued on the server per player before new ones are dropped (1 s: slow clients send in bursts; speed is capped by commandRate, not by this) */
+  maxQueuedCommands: 60,
   /** area of interest: entities within this radius (m) are sent; leaving needs radius + hysteresis */
   aoiRadius: 40,
   aoiHysteresis: 4,

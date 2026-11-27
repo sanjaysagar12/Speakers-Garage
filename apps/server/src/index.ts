@@ -1,5 +1,9 @@
+import { existsSync } from 'node:fs';
 import { buildApp } from './app';
 import { loadEnv } from './env';
+
+// apps/server/.env (optional; real deployments set the environment directly)
+if (existsSync('.env')) process.loadEnvFile('.env');
 
 let env;
 try {

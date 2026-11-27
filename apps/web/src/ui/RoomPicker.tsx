@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MAP_NAMES } from '@shoreline/shared';
 import { useGameStore } from '../store/useGameStore';
-import { serverHttp } from '../game/net/WebSocketAdapter';
+import { serverHttp } from '../game/net/endpoints';
 
 interface RoomInfo {
   id: string;
