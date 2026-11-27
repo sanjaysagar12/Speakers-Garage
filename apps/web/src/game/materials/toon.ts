@@ -64,6 +64,7 @@ const VERT = /* glsl */ `
 #include <common>
 #include <color_pars_vertex>
 #include <shadowmap_pars_vertex>
+#include <skinning_pars_vertex>
 ${GLOBALS_GLSL}
 ${SWAY_GLSL}
 attribute vec3 aPat;
@@ -87,6 +88,8 @@ varying vec3 vWN;
 void main() {
   #include <color_vertex>
   #include <beginnormal_vertex>
+  #include <skinbase_vertex>
+  #include <skinnormal_vertex>
   #include <defaultnormal_vertex>
   #include <begin_vertex>
   mat4 M = modelMatrix;
@@ -110,6 +113,8 @@ void main() {
   // movement-driven secondary motion (hair, scarf tails): a local-space offset weighted by aSway
   transformed += uSwing * aSway * aSway;
   #endif
+  // characters are skinned meshes: bones move the (rest-pose) model after the secondary motion
+  #include <skinning_vertex>
   #include <project_vertex>
   #include <worldpos_vertex>
   #include <shadowmap_vertex>

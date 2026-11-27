@@ -1,10 +1,11 @@
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 
 // three.js-backed parts load on demand so the landing page's first download stays small
 const AvatarPreview = lazy(() => import('./AvatarPreview').then((m) => ({ default: m.AvatarPreview })));
 const renderThumb: typeof import('../game/models/character/thumbs').renderThumb = (...a) => import('../game/models/character/thumbs').then((m) => m.renderThumb(...a));
 import { useGameStore } from '../store/useGameStore';
 import { AVATAR_SLOTS, CLOTH_COLOURS, HAIR_COLOURS, SKIN_TONES, SLOT_FIELDS } from '@shoreline/shared';
+import { enforceConflicts, resolveFit } from '../game/models/character/fitRules';
 import type { AvatarConfig, Slot } from '../types';
 
 const SLOTS: Array<{ id: Slot; label: string; icon: string }> = [
@@ -91,6 +92,8 @@ export function AvatarCustomizer({ compact = false }: { compact?: boolean }) {
   const currentId = String(avatar[field.id]);
   const currentColour = String(avatar[field.colour]);
   const palette = slot === 'hair' ? HAIR_COLOURS : CLOTH_COLOURS;
+  // layer rules: what the current outfit hides or adapts (the preview draws exactly this)
+  const notes = useMemo(() => resolveFit(avatar).notes, [avatar]);
 
   const randomize = () => {
     replaceAvatar({
@@ -157,11 +160,18 @@ export function AvatarCustomizer({ compact = false }: { compact?: boolean }) {
               optionId={o.id}
               label={o.label}
               selected={currentId === o.id}
-              onPick={() => setAvatar({ [field.id]: o.id } as Partial<AvatarConfig>)}
+              onPick={() => replaceAvatar(enforceConflicts({ ...avatar, [field.id]: o.id }, slot))}
             />
           ))}
         </div>
         <div className="text-xs font-semibold text-bark/70">{options.find((o) => o.id === currentId)?.label ?? ''}</div>
+        {notes.length > 0 && (
+          <ul className="text-[11px] leading-snug text-bark/60" aria-label="How these items fit together">
+            {notes.map((n) => (
+              <li key={n}>· {n}</li>
+            ))}
+          </ul>
+        )}
         <Swatches colours={palette} value={currentColour} onPick={(c) => setAvatar({ [field.colour]: c } as Partial<AvatarConfig>)} />
       </div>
     </div>

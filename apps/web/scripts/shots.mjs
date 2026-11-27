@@ -11,7 +11,7 @@ import path from 'node:path';
 const filter = process.argv[2] ?? '';
 const outDir = path.resolve('shots');
 fs.mkdirSync(outDir, { recursive: true });
-const YAWS = [-60, 0, 60];
+const YAWS = /fit:|head:/.test(filter) ? [0, 90, 180, 135] : [-60, 0, 60];
 const TW = 420;
 const TH = 315;
 const ROWS_PER_SHEET = 6;
@@ -20,22 +20,38 @@ const server = await createServer({ server: { port: 5199, strictPort: false, hos
 await server.listen();
 const url = server.resolvedUrls.local[0];
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: TW * 2, height: TH * 2 }, deviceScaleFactor: 1 });
 const errors = [];
-page.on('pageerror', (e) => errors.push(e.message));
-page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-await page.goto(`${url}?shots`);
-await page.waitForFunction(() => window.__shots, null, { timeout: 60000 });
+let page;
+async function openPage() {
+  page = await browser.newPage({ viewport: { width: TW * 2, height: TH * 2 }, deviceScaleFactor: 1 });
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  await page.goto(`${url}?shots`);
+  await page.waitForFunction(() => window.__shots, null, { timeout: 60000 });
+}
+await openPage();
 const filters = filter.split(',');
-const keys = (await page.evaluate(() => window.__shots.keys)).filter((k) => filters.some((f) => k.includes(f)));
+const keys = (await page.evaluate(() => window.__shots.keys)).filter((k) => filters.some((f) => k.includes(f)) && (/fit:|head:/.test(filter) || !/^(fit|head):/.test(k)));
 console.log(`${keys.length} entries x ${YAWS.length} yaws`);
 
 const rows = [];
 for (const key of keys) {
   const tiles = [];
   for (const yaw of YAWS) {
-    await page.evaluate(([k, y]) => window.__shots.show(k, y), [key, yaw]);
-    const buf = await page.locator('canvas').screenshot();
+    let buf;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await page.evaluate(([k, y]) => window.__shots.show(k, y), [key, yaw]);
+        buf = await page.screenshot({ timeout: 180000 });
+        break;
+      } catch (e) {
+        // software GL occasionally crashes the page after many heavy frames: reopen and retry once
+        if (attempt > 0) throw e;
+        console.log(`\n${key} @${yaw}: ${String(e.message).split('\n')[0]} (retrying)`);
+        await page.close().catch(() => {});
+        await openPage();
+      }
+    }
     if (process.env.SHOTS_RAW) fs.writeFileSync(path.join(outDir, `raw-${key.replace(/[^a-z0-9_#-]/gi, '_')}-${yaw}.png`), buf);
     tiles.push(await sharp(buf).resize(TW, TH).png().toBuffer());
   }

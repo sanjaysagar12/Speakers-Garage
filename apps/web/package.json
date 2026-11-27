@@ -17,7 +17,8 @@
     "pier-check": "node scripts/pier-check.mjs",
     "analyze": "ANALYZE=1 vite build",
     "smoke": "node scripts/smoke.mjs",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "test:fit": "tsx --conditions=source scripts/fit-check.ts"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",

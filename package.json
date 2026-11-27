@@ -14,6 +14,7 @@
     "test": "turbo run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test:fit": "pnpm --filter @shoreline/web test:fit",
     "test:movement": "pnpm --filter @shoreline/shared exec vitest run tests/movement.test.ts"
   },
   "devDependencies": {

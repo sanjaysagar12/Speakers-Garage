@@ -31,7 +31,27 @@ const CHARACTERS: Record<string, Partial<AvatarConfig>> = {
   long_run: { hairStyle: 'long', hairColor: '#1E1A1F', topId: 'tee', topColor: '#EC847C' },
 };
 
+/**
+ * Fit sheets (npm run shots -- fit: / head:): close views from the front, side, back and a 3/4 view at
+ * the game camera's pitch, to check sleeves, shoulders, brims and hair against the body.
+ */
+export const FIT_OUTFITS: Record<string, Partial<AvatarConfig>> = {
+  tee_shorts: { topId: 'tee', topColor: '#A79BE0', bottomId: 'shorts', bottomColor: '#11738A', shoesId: 'sneakers', shoesColor: '#EC847C', hairStyle: 'short' },
+  tank_trunks: { topId: 'tank', topColor: '#5CA464', bottomId: 'trunks', bottomColor: '#F08A3C', shoesId: 'sandals', hairStyle: 'buzz', skin: '#9C6440' },
+  hoodie_trousers: { topId: 'hoodie', topColor: '#74DCD4', bottomId: 'trousers', bottomColor: '#3A3F4A', shoesId: 'sneakers', shoesColor: '#FBF6EE', hairStyle: 'long', hairColor: '#1E1A1F' },
+  swim_skirt: { topId: 'swim_shirt', topColor: '#11738A', bottomId: 'skirt', bottomColor: '#F49AB0', shoesId: 'barefoot', hairStyle: 'ponytail', hairColor: '#C08A4A' },
+  tee_skirt_cap: { topId: 'tee', topColor: '#FBF6EE', bottomId: 'skirt', bottomColor: '#11738A', hatId: 'cap', hatColor: '#EC847C', hairStyle: 'bob', shoesId: 'sandals' },
+  hoodie_backpack_scarf: { topId: 'hoodie', topColor: '#F6C945', bottomId: 'shorts', bottomColor: '#144454', accessoryId: 'backpack', accessoryColor: '#04A4B4', hairStyle: 'wavy', hairColor: '#E8C878', hatId: 'sun_hat' },
+  tee_scarf_glasses: { topId: 'tee', topColor: '#EC847C', bottomId: 'trousers', bottomColor: '#C98A4B', accessoryId: 'scarf', accessoryColor: '#F49AB0', hatId: 'cap', hairStyle: 'ponytail', shoesId: 'sneakers' },
+  glasses_sunhat: { topId: 'swim_shirt', topColor: '#FBF6EE', bottomId: 'shorts', accessoryId: 'sunglasses', hatId: 'sun_hat', hairStyle: 'bun', hairColor: '#5A3A22' },
+};
+const FIT_HAIRS = ['short', 'buzz', 'bob', 'long', 'wavy', 'ponytail', 'bun', 'braid'];
+const FIT_HATS = ['none', 'cap', 'sun_hat'];
+
 export const SHOT_KEYS = [
+  ...Object.keys(FIT_OUTFITS).map((k) => `fit:${k}`),
+  ...Object.keys(FIT_OUTFITS).map((k) => `fit:${k}:walk`),
+  ...FIT_HAIRS.flatMap((h) => FIT_HATS.map((t) => `head:${h}:${t}`)),
   ...Object.keys(PROPS).map((k) => `prop:${k}`),
   'prop:palm#0',
   'prop:palm#1',
@@ -48,10 +68,23 @@ interface Built {
   character: Character | null;
   water: boolean;
   motion: 'idle' | 'walk' | 'run';
+  /** close-up framing: target height and distance */
+  close?: { y: number; dist: number };
 }
 
 function buildEntry(key: string): Built {
   const [kind, rest] = key.split(':');
+  if (kind === 'fit' || kind === 'head') {
+    const parts = key.split(':');
+    const cfg: AvatarConfig =
+      kind === 'fit'
+        ? { ...DEFAULT_AVATAR, ...FIT_OUTFITS[parts[1]] }
+        : { ...DEFAULT_AVATAR, hairStyle: parts[1], hatId: parts[2], hairColor: '#5A3A22', hatColor: '#EC847C', topId: 'tee', topColor: '#FBF6EE' };
+    const c = new Character(cfg);
+    const g = new Group();
+    g.add(c.root);
+    return { obj: g, character: c, water: false, motion: parts[2] === 'walk' ? 'walk' : 'idle', close: kind === 'head' ? { y: 1.6, dist: 0.85 } : { y: 0.92, dist: 2.6 } };
+  }
   if (kind === 'char') {
     const front = rest.endsWith('_front');
     const c = new Character({ ...DEFAULT_AVATAR, ...(CHARACTERS[rest.replace('_front', '')] ?? {}) });
@@ -95,10 +128,16 @@ function Rig({ entry, yaw, onReady }: { entry: Built; yaw: number; onReady: () =
     const box = new Box3().setFromObject(entry.obj);
     const sphere = box.getBoundingSphere(new Sphere());
     target.current.copy(sphere.center);
-    const pitch = GAME_CONFIG.camera.pitchDeg * DEG;
     const isChar = !!entry.character;
-    const dist = isChar ? 3.3 : Math.min(34, Math.max(3.2, sphere.radius * 3.4));
+    let dist = isChar ? 3.3 : Math.min(34, Math.max(3.2, sphere.radius * 3.4));
     if (isChar) target.current.set(0, 1.05, 0);
+    let pitch = GAME_CONFIG.camera.pitchDeg * DEG;
+    if (entry.close) {
+      // front/side/back views are level; the 3/4 view (yaw 135) uses the game camera's pitch
+      target.current.set(0, entry.close.y, 0);
+      dist = entry.close.dist;
+      if (yaw !== 135) pitch = 8 * DEG;
+    }
     camera.fov = GAME_CONFIG.camera.fov;
     camera.position.set(
       target.current.x + Math.sin(yaw * DEG) * Math.cos(pitch) * dist,
@@ -139,7 +178,7 @@ function Ground({ water }: { water: boolean }) {
 }
 
 export default function ShotsScene() {
-  const [state, setState] = useState<{ key: string; yaw: number }>({ key: SHOT_KEYS[0], yaw: 0 });
+  const [state, setState] = useState<{ key: string; yaw: number }>({ key: SHOT_KEYS[0], yaw: -1 });
   const resolver = useRef<(() => void) | null>(null);
   const entry = useMemo(() => buildEntry(state.key), [state.key]);
   useEffect(

@@ -2,6 +2,9 @@ import { Color, SphereGeometry, TorusGeometry, Vector3, type Material } from 'th
 import { ModelBuilder } from '../util/builder';
 import { smoothstep } from '@shoreline/shared';
 import { ellipsoid, ribbon, rng, sweep } from '../util/geo';
+import { bareHairMask, hairMask, type HatFit } from './hats';
+import { HEAD } from './rig';
+import type { VertexMask } from '../util/builder';
 
 /**
  * Hair is built in head space (origin = head centre, +z = face, +y = up, head radius ≈ 0.11).
@@ -33,6 +36,12 @@ interface Style {
   width: number;
   roots: number;
   puff: number;
+  /**
+   * hatMode: how the style is worn under a hat. The crown and top volume under the hat are always
+   * masked away (hats.ts hairMask); this only says where a tie goes: through the cap's back opening
+   * (`open`) or lowered under a hat without one (`closed`). Omitted = the tie stays where it is.
+   */
+  hatMode?: { open?: Vector3; closed?: Vector3 };
 }
 
 const zone = (p: Vector3) => ({
@@ -65,10 +74,12 @@ const STYLES: Record<string, Style> = {
   ponytail: {
     part: 0, kx: 0.4, kz: 0.2, tie: new Vector3(0, 0.035, -0.128), hang: 'none', hangTo: 0, width: 0.032, roots: 90, puff: 1.08,
     endY: (p) => (zone(p).front ? 0.05 : -1),
+    hatMode: { open: new Vector3(0, 0.014, -0.13), closed: new Vector3(0, -0.035, -0.122) },
   },
   bun: {
     part: 0, kx: 0.4, kz: 0.2, tie: new Vector3(0, 0.105, -0.07), hang: 'none', hangTo: 0, width: 0.032, roots: 90, puff: 1.08,
     endY: (p) => (zone(p).front ? 0.05 : -1),
+    hatMode: { open: new Vector3(0, -0.006, -0.13), closed: new Vector3(0, -0.04, -0.122) },
   },
   braid: {
     part: 0.0, kx: 0.5, kz: 0.25, tie: new Vector3(0, -0.06, -0.112), hang: 'none', hangTo: 0, width: 0.032, roots: 90, puff: 1.08,
@@ -113,7 +124,7 @@ function scalpPath(root: Vector3, st: Style, R: number): Vector3[] {
 }
 
 /** Continue a clump below the head: behind the shoulders, or in front of them for front locks. */
-function hangPath(pts: Vector3[], st: Style, r: () => number): void {
+function hangPath(pts: Vector3[], st: Style, r: () => number, back: number): void {
   const last = pts[pts.length - 1].clone();
   const front = last.z > 0.02 && Math.abs(last.x) > 0.05;
   const steps = 9;
@@ -133,7 +144,7 @@ function hangPath(pts: Vector3[], st: Style, r: () => number): void {
       z = last.z + (0.14 - last.z) * smoothstep(0, 0.5, t);
     } else {
       // clear the shoulder blades: shoulders sit at y≈-0.19, |x|≈0.18
-      const out = Math.abs(last.x) > 0.06 ? -0.15 : -0.14;
+      const out = Math.min(Math.abs(last.x) > 0.06 ? -0.15 : -0.14, back);
       z = last.z + (out - last.z) * smoothstep(0, 0.45, t) - 0.015 * t;
       if (Math.abs(x) > 0.13) x = Math.sign(x) * (0.13 + (Math.abs(x) - 0.13) * 0.3);
     }
@@ -161,9 +172,50 @@ function addClump(b: ModelBuilder, mat: Material, pts: Vector3[], width: number,
   b.add(inner, { mat, color: tone, sway: hairSwayWeight });
 }
 
+/** Layer rule glasses vs hair: hair crossing the temple line is lifted to lie over the temple. */
+function overTemples(base: VertexMask): VertexMask {
+  return {
+    hidden: base.hidden,
+    hide: base.hide,
+    adjust: (p) => {
+      base.adjust?.(p);
+      // fringe in front of the lenses lies on them
+      if (p.z > 0.09 && Math.abs(p.x) < 0.075 && Math.abs(p.y - HEAD.eyeY) < 0.035) p.z = Math.max(p.z, 0.132 - 0.12 * Math.abs(p.x) ** 2 * 10);
+      if (Math.abs(p.x) < 0.06 || p.z < -0.045 || p.z > 0.1) return;
+      const dy = Math.abs(p.y - HEAD.templeY(p.z));
+      if (dy > 0.03) return;
+      const len = p.length();
+      const surf = HEAD.surface(p.clone().divideScalar(len));
+      const lift = dy < 0.014 ? 0.017 : 0.017 - (0.013 * (dy - 0.014)) / 0.016;
+      if (len - surf < lift && len - surf > -0.003) p.multiplyScalar((surf + lift) / len);
+    },
+  };
+}
+
+export interface HairFit {
+  /** the hat being worn (its mask hides/tucks hair), or null */
+  hat: HatFit | null;
+  /** hanging hair stays behind this z (head space): clothes and backpacks on the upper back push it out */
+  back: number;
+  /** glasses worn: hair over the temple line rests on the temples */
+  glasses?: boolean;
+}
+
 /** Builds the hair for `style` into `b` with the (unique, swinging) hair material. Vertex colours are tone factors. */
-export function buildHair(b: ModelBuilder, mat: Material, style: string, seed = 7): void {
-  const st = STYLES[style] ?? STYLES.short;
+export function buildHair(b: ModelBuilder, mat: Material, style: string, fit: HairFit = { hat: null, back: -0.15 }, seed = 7): void {
+  const base = STYLES[style] ?? STYLES.short;
+  const tie = fit.hat && base.tie && base.hatMode ? ((fit.hat.opening ? base.hatMode.open : base.hatMode.closed) ?? base.tie) : base.tie;
+  const st: Style = { ...base, tie };
+  const mask = fit.hat ? hairMask(fit.hat) : bareHairMask;
+  b.setMask(fit.glasses ? overTemples(mask) : mask);
+  try {
+    buildStyle(b, mat, style, st, fit, seed);
+  } finally {
+    b.setMask(null);
+  }
+}
+
+function buildStyle(b: ModelBuilder, mat: Material, style: string, st: Style, fit: HairFit, seed: number): void {
   const r = rng(seed + style.length * 31);
   // tone factors multiply the hair colour; >1 gives the anime sheen on a few top clumps
   const tones = [new Color(1, 1, 1), new Color(0.86, 0.86, 0.86), new Color(1.12, 1.12, 1.12), new Color(0.76, 0.76, 0.76), new Color(1.35, 1.32, 1.3)];
@@ -199,7 +251,7 @@ export function buildHair(b: ModelBuilder, mat: Material, style: string, seed = 
   const R = CAP_R * 1.02;
   for (const root of roots) {
     const path = scalpPath(root, st, R * (st.puff + (r() - 0.5) * 0.04));
-    if (st.hang !== 'none' && path[path.length - 1].y < 0.02 && !(zone(path[path.length - 1]).front)) hangPath(path, st, r);
+    if (st.hang !== 'none' && path[path.length - 1].y < 0.02 && !(zone(path[path.length - 1]).front)) hangPath(path, st, r, fit.back);
     // anime-style pointed tips flick slightly outward
     if (path.length >= 2 && st.hang === 'none') {
       const a = path[path.length - 1];
@@ -223,8 +275,12 @@ export function buildHair(b: ModelBuilder, mat: Material, style: string, seed = 
   }
   if (style === 'bun' && st.tie) {
     const t = st.tie;
-    b.add(ellipsoid(0.058, 0.05, 0.058, 14, 10), { mat, color: '#EDEDED', pos: [t.x, t.y + 0.03, t.z - 0.005] });
-    b.add(new TorusGeometry(0.05, 0.014, 6, 16), { mat, color: '#D8D8D8', pos: [t.x, t.y + 0.025, t.z - 0.005], rot: [Math.PI / 2 - 0.3, 0, 0] });
+    // the bun sits on the tie, pushed out along the head's normal there (works for a top or a low bun)
+    const n = t.clone().normalize();
+    const c = t.clone().addScaledVector(n, 0.032);
+    const ring = t.clone().addScaledVector(n, 0.024);
+    b.add(ellipsoid(0.058, 0.05, 0.058, 14, 10), { mat, color: '#EDEDED', pos: [c.x, c.y, c.z] });
+    b.add(new TorusGeometry(0.05, 0.014, 6, 16), { mat, color: '#D8D8D8', pos: [ring.x, ring.y, ring.z], rot: [Math.atan2(-n.y, n.z), 0, 0] });
   }
   if (style === 'braid' && st.tie) {
     const t = st.tie;
