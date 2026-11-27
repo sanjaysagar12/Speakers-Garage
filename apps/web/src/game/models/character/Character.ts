@@ -2,7 +2,7 @@ import { Bone, BoxGeometry, Color, Group, MathUtils, type Mesh, ShaderMaterial, 
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { ModelBuilder, disposeObject } from '../util/builder';
 import { ellipsoid, sweep } from '../util/geo';
-import { toon, toonUnique } from '../../materials/toon';
+import { toonUnique } from '../../materials/toon';
 import { PAL } from '../palette';
 import { buildHair } from './hair';
 import { buildHat, hatFit } from './hats';
@@ -47,10 +47,10 @@ export interface CharacterMotion {
 
 type Pivots = Record<BoneName, Bone>;
 
-type MatKey = 'skin' | 'hair' | 'top' | 'bottom' | 'shoes' | 'hat' | 'accessory';
+type MatKey = 'skin' | 'hair' | 'top' | 'bottom' | 'shoes' | 'hat' | 'accessory' | 'detail' | 'trim' | 'cord' | 'ribbon';
 
 /** Depth bias per material layer (0 = none): skin < hair < accessories. Exported for the fit test. */
-export const DEPTH_LAYER: Record<MatKey, number> = { skin: 0, bottom: 0, top: 0, shoes: 0, hat: 0, hair: 1, accessory: 2 };
+export const DEPTH_LAYER: Record<MatKey, number> = { skin: 0, bottom: 0, top: 0, shoes: 0, hat: 0, hair: 1, accessory: 2, detail: 0, trim: 0, cord: 0, ribbon: 0 };
 
 /** Body ranges hidden under a cover start this far inside the garment's edge (no gaps when looking in). */
 const COVER_MARGIN = 0.03;
@@ -146,6 +146,12 @@ export class Character {
       shoes: toonUnique({}),
       hat: toonUnique({ double: true }),
       accessory: toonUnique({ swing: true }),
+      // per character (not the cached shared ones): the same character is drawn by the world, the preview
+      // and the thumbnail renderers, and a material's light uniforms belong to the renderer that drew it last
+      detail: toonUnique({}),
+      trim: toonUnique({ color: PAL.offWhite }),
+      cord: toonUnique({ double: true }),
+      ribbon: toonUnique({ color: PAL.coral }),
     };
     // depth layers: where a surface touches the one under it tangentially (hair over the top of an ear,
     // glasses temples in the hair), the outer layer wins the depth test instead of flickering
@@ -160,6 +166,13 @@ export class Character {
   }
 
   /* ---------------------------------------------------------------- building ---------------------------- */
+
+  /** A builder whose default (vertex-colour) material belongs to this character. */
+  private builder(): ModelBuilder {
+    const b = new ModelBuilder();
+    b.defaultMat = this.mats.detail;
+    return b;
+  }
 
   /**
    * Build `b` as skinned meshes at the model root, tracked under `slot` for rebuilds. With `rigidOn`, the
@@ -199,14 +212,14 @@ export class Character {
     this.slotParts.delete(slot);
   }
 
-  private ctx(b: ModelBuilder, main: ShaderMaterial, trim = toon({ color: PAL.offWhite }), hidden = resolveFit(this.cfg!).hidden): FitCtx {
+  private ctx(b: ModelBuilder, main: ShaderMaterial, trim: ShaderMaterial = this.mats.trim, hidden = resolveFit(this.cfg!).hidden): FitCtx {
     const under = this.fit.under;
-    return { b, main, trim, under: (Y) => envelopeAt(under, Y), hidden, covers: [], envelope: [], backDepth: 0 };
+    return { b, main, trim, cord: this.mats.cord, under: (Y) => envelopeAt(under, Y), hidden, covers: [], envelope: [], backDepth: 0 };
   }
 
   private buildBody(covers: readonly Cover[]): void {
     const m = this.mats.skin;
-    const b = new ModelBuilder();
+    const b = this.builder();
     // tubes: torso, neck, pelvis, limbs, minus what clothes cover
     for (const name of Object.keys(SEGMENTS) as SegName[]) {
       const seg = SEGMENTS[name];
@@ -248,7 +261,7 @@ export class Character {
   }
 
   private buildHairSlot(cfg: AvatarConfig): void {
-    const b = new ModelBuilder();
+    const b = this.builder();
     // long hair hangs behind whatever is on the upper back (head space z; the back sits ~0.1 behind the neck)
     const backDepth = Math.max(this.fit.back, accessoryBackDepth(cfg.accessoryId, topOffset(cfg.topId)));
     buildHair(b, this.mats.hair, cfg.hairStyle, { hat: hatFit(cfg.hatId), back: -(0.124 + backDepth), glasses: cfg.accessoryId === 'sunglasses' });
@@ -258,7 +271,7 @@ export class Character {
   private buildAccessory(cfg: AvatarConfig): void {
     const m = this.mats.accessory;
     const id = cfg.accessoryId;
-    const b = new ModelBuilder();
+    const b = this.builder();
     const torso = SEGMENTS.torso as TubeSeg;
     const off = topOffset(cfg.topId) + (cfg.topId === 'hoodie' ? 0.004 : 0);
     if (id === 'sunglasses') {
@@ -338,7 +351,7 @@ export class Character {
       const key = DEPS[slot].map((k) => cfg[k]).join('|');
       const dirty = this.slotKeys.get(slot) !== key;
       if (slot === 'bottom') {
-        const ctx = this.ctx(new ModelBuilder(), this.mats.bottom, toon({ color: PAL.offWhite }), fit.hidden);
+        const ctx = this.ctx(this.builder(), this.mats.bottom, this.mats.trim, fit.hidden);
         ctx.under = () => 0;
         buildBottom(ctx, REST, cfg.bottomId);
         covers.push(...ctx.covers);
@@ -349,7 +362,7 @@ export class Character {
           this.attach('bottom', ctx.b);
         }
       } else if (slot === 'top') {
-        const ctx = this.ctx(new ModelBuilder(), this.mats.top, toon({ color: PAL.offWhite }), fit.hidden);
+        const ctx = this.ctx(this.builder(), this.mats.top, this.mats.trim, fit.hidden);
         buildTop(ctx, REST, cfg.topId);
         covers.push(...ctx.covers);
         back = topBackDepth(cfg.topId, fit.hidden);
@@ -358,7 +371,7 @@ export class Character {
           this.attach('top', ctx.b);
         }
       } else if (slot === 'shoes') {
-        const ctx = this.ctx(new ModelBuilder(), this.mats.shoes, toon({ color: PAL.offWhite }), fit.hidden);
+        const ctx = this.ctx(this.builder(), this.mats.shoes, this.mats.trim, fit.hidden);
         buildShoes(ctx, REST, cfg.shoesId);
         covers.push(...ctx.covers);
         if (dirty) {
@@ -372,8 +385,8 @@ export class Character {
         this.buildBody(covers);
       } else if (slot === 'hat') {
         this.clearSlot('hat');
-        const b = new ModelBuilder();
-        buildHat(b, this.mats.hat, toon({ color: PAL.coral }), cfg.hatId);
+        const b = this.builder();
+        buildHat(b, this.mats.hat, this.mats.ribbon, cfg.hatId);
         this.attach('hat', b, 'head');
       } else if (slot === 'hair') {
         this.fit = { covers, under, back };

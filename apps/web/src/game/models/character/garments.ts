@@ -2,7 +2,6 @@ import { BufferGeometry, Vector3, type Material, type Matrix4 } from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { smoothstep } from '@speakersgarage/shared';
 import { ModelBuilder } from '../util/builder';
-import { toon } from '../../materials/toon';
 import { slab, sweep } from '../util/geo';
 import { BONE_INDEX, SEGMENTS, ringAt, type BoneName, type EllipsoidSeg, type SegName, type TubeSeg } from './rig';
 import { band, ellipsoidShell, onTube, ringGrid, tubePatch, tubeShell, type ShellOpts } from './shell';
@@ -29,6 +28,8 @@ export interface FitCtx {
   b: ModelBuilder;
   main: Material;
   trim: Material;
+  /** double-sided material for thin cords (drawstrings) */
+  cord: Material;
   /** lower-layer offset from the torso/pelvis surface at root-space height Y (0 if none) */
   under: (rootY: number) => number;
   hidden: ReadonlySet<GarmentPart>;
@@ -109,7 +110,7 @@ function waistband(ctx: FitCtx, rest: Rest, y: number, offset: number, mat: Mate
 /** Cords hanging from a point (drawstrings, laces) in the current frame. */
 function cord(ctx: FitCtx, pts: Vector3[], r: number, color: string): void {
   // double-sided: a thin swept cord's winding depends on the path direction
-  ctx.b.add(sweep(pts, r, 5, Math.max(4, pts.length * 3)), { color, mat: toon({ color: '#ffffff', double: true }) });
+  ctx.b.add(sweep(pts, r, 5, Math.max(4, pts.length * 3)), { color, mat: ctx.cord });
 }
 
 /* ---------------------------------------------------------------- tops --------------------------------- */
@@ -402,7 +403,7 @@ export function buildShoes(ctx: FitCtx, rest: Rest, id: string): void {
 
 /** Dry-run a garment to read its covers/envelope/back depth without keeping the geometry. */
 export function garmentInfo(slot: 'top' | 'bottom' | 'shoes', id: string, rest: Rest, hidden: ReadonlySet<GarmentPart> = new Set()): Pick<FitCtx, 'covers' | 'envelope' | 'backDepth'> {
-  const ctx: FitCtx = { b: new ModelBuilder(), main: null as unknown as Material, trim: null as unknown as Material, under: () => 0, hidden, covers: [], envelope: [], backDepth: 0 };
+  const ctx: FitCtx = { b: new ModelBuilder(), main: null as unknown as Material, trim: null as unknown as Material, cord: null as unknown as Material, under: () => 0, hidden, covers: [], envelope: [], backDepth: 0 };
   if (slot === 'top') buildTop(ctx, rest, id);
   else if (slot === 'bottom') buildBottom(ctx, rest, id);
   else buildShoes(ctx, rest, id);

@@ -4,7 +4,7 @@ import { OrbitControls } from '@react-three/drei';
 import { CircleGeometry, Mesh, PCFShadowMap, Vector3 } from 'three';
 import { Character } from '../game/models/character/Character';
 import { Sun } from '../game/engine/Sun';
-import { toon } from '../game/materials/toon';
+import { toonUnique } from '../game/materials/toon';
 import { PAL } from '../game/models/palette';
 import type { AvatarConfig } from '../types';
 import { useReleaseGpuOnUnmount } from '../game/util/releaseGpu';
@@ -33,11 +33,18 @@ function Model({ avatar, yaw }: { avatar: AvatarConfig; yaw: number }) {
 function Pad() {
   const m = useMemo(() => {
     const geo = new CircleGeometry(0.75, 32).rotateX(-Math.PI / 2);
-    const mesh = new Mesh(geo, toon({ color: PAL.sand }));
+    // its own material: this canvas has its own renderer and lights (see ModelBuilder.defaultMat)
+    const mesh = new Mesh(geo, toonUnique({ color: PAL.sand }));
     mesh.receiveShadow = true;
     return mesh;
   }, []);
-  useEffect(() => () => m.geometry.dispose(), [m]);
+  useEffect(
+    () => () => {
+      m.geometry.dispose();
+      (m.material as { dispose(): void }).dispose();
+    },
+    [m],
+  );
   return <primitive object={m} dispose={null} />;
 }
 

@@ -161,6 +161,12 @@ export class ModelBuilder {
   private readonly groups = new Map<Material, BufferGeometry[]>();
   /** per material, the tag and triangle count of each part in merge order (fit test bookkeeping) */
   private readonly partInfo = new Map<Material, Array<{ tag: string; tris: number }>>();
+  /**
+   * Material for parts added without one (vertex colours). Defaults to the shared cached toon(); a model
+   * drawn by several renderers (the avatar in the world, the preview and the thumbnails) passes its own,
+   * because a material's light uniforms are written by whichever renderer used it last.
+   */
+  defaultMat: Material | null = null;
   /** label recorded for the following parts (e.g. the body segment a garment piece sits on) */
   tag = '';
   private frameState: Frame | null = null;
@@ -182,7 +188,7 @@ export class ModelBuilder {
   }
 
   add(geo: BufferGeometry, opts: PartOpts = {}): this {
-    const mat = opts.mat ?? toon();
+    const mat = opts.mat ?? this.defaultMat ?? toon();
     const list = this.groups.get(mat) ?? [];
     const g = prepGeometry(geo, opts, this.frameState, this.maskState);
     list.push(g);
