@@ -1,6 +1,6 @@
 import { Color, PerspectiveCamera, Scene, Vector3, WebGLRenderer, NoToneMapping, SRGBColorSpace } from 'three';
 import { Character } from './Character';
-import { SLOT_FIELDS } from './catalog';
+import { SLOT_FIELDS } from '@shoreline/shared';
 import type { AvatarConfig, Slot } from '../../../types';
 
 /**

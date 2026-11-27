@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Box3, Group, Mesh, PCFShadowMap, PerspectiveCamera, PlaneGeometry, Sphere, Vector3 } from 'three';
 import { PROPS } from '../game/models/catalog';
 import { Character } from '../game/models/character/Character';
-import { DEFAULT_AVATAR } from '../game/models/character/catalog';
+import { DEFAULT_AVATAR } from '@shoreline/shared';
 import { disposeObject } from '../game/models/util/builder';
 import { toon } from '../game/materials/toon';
 import { G } from '../game/materials/globals';

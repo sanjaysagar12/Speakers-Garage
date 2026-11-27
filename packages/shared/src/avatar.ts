@@ -1,4 +1,4 @@
-import type { AvatarConfig, Slot, SlotOption } from '../../../types';
+import type { AvatarConfig, Slot, SlotOption } from './types';
 
 /** Everything the customizer can offer. Ids are persisted, so only ever add to these lists. */
 export const AVATAR_SLOTS: Record<Slot, SlotOption[]> = {
@@ -70,7 +70,11 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 const has = (slot: Slot, id: unknown) => typeof id === 'string' && AVATAR_SLOTS[slot].some((o) => o.id === id);
 const hex = (v: unknown, d: string) => (typeof v === 'string' && HEX.test(v) ? v : d);
 
-/** Accepts anything (old saves, other clients) and returns a valid config; unknown ids fall back to defaults. */
+/**
+ * Accepts anything (old saves, other clients) and returns a valid config: item ids must be in the catalog
+ * (unknown ids fall back to defaults) and colours must be exactly '#RRGGBB'. Free colours are allowed on
+ * purpose: the customizer has a custom colour picker. The server runs this on every join/avatarUpdate.
+ */
 export function sanitizeAvatar(raw: Partial<Record<keyof AvatarConfig, unknown>> | null | undefined): AvatarConfig {
   const r = raw ?? {};
   const d = DEFAULT_AVATAR;

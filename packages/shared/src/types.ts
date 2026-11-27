@@ -62,3 +62,9 @@ export interface Vec2 {
   x: number;
   y: number;
 }
+
+/** One choice in a customizer slot. */
+export interface SlotOption {
+  id: string;
+  label: string;
+}

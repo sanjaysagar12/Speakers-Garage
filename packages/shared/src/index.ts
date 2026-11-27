@@ -3,6 +3,7 @@
  * three.js, no Node APIs, so the same code runs in the browser (prediction) and on the server (authority).
  */
 export * from './types';
+export * from './avatar';
 export * from './config';
 export * from './util/noise';
 export * from './util/rng';
@@ -19,3 +20,9 @@ export { VINLAND_KIND_COLOURS } from './map/vinland/colours';
 export { createMapData } from './map/index';
 export * from './sim/collision';
 export * from './sim/step';
+export * from './sim/commands';
+export * from './sim/prediction';
+export * from './net/constants';
+export * from './net/codec';
+export * from './net/messages';
+export * from './net/text';
