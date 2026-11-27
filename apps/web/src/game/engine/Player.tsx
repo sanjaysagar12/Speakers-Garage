@@ -9,6 +9,7 @@ import { NET, Predictor, STEP_DT, newPlayerSim, wrapAngle, type InputCommand } f
 import { session } from '../net/session';
 import { remotes } from '../net/entities';
 import { localEmote, setLocalEmote } from '../net/emotes';
+import { listenerPose } from '../../voice/voice';
 import { gameBridge } from '../../store/bridge';
 import { gameStore } from '../../store/gameStore';
 import type { Vec2 } from '../../types';
@@ -251,6 +252,10 @@ export function Player() {
 
     // wading leaves a slow trail of ripples even between steps
     if (wade > 0.08 && P.moving && Math.random() < dt * 5) world.fx?.ripple(P.pos.x, P.pos.y + wade, P.pos.z, 0.9);
+
+    listenerPose.x = P.pos.x;
+    listenerPose.z = P.pos.z;
+    listenerPose.yaw = world.camera.yaw;
 
     const now = performance.now();
     if (now - lastPublish.current > GAME_CONFIG.ui.positionPublishMs) {

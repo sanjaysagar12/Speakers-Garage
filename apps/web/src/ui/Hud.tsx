@@ -8,6 +8,7 @@ import { Wardrobe } from './Wardrobe';
 import { QualitySettings } from './QualitySettings';
 import { Suspense, lazy } from 'react';
 import { ChatPanel, EmoteBar, NetBadge } from './Social';
+import { PlayerMenu, VoicePanel } from './Voice';
 
 const clockLabel = (t: number): string => {
   const hours = (t * 24 + 6) % 24; // phase 0 is midnight-ish; shift so 0.3 reads as late morning
@@ -84,6 +85,7 @@ export function Hud() {
             <li><b>E</b> at a ✦ to look closer</li>
             <li><b>Scroll</b> to zoom</li>
             <li><b>T</b> chat, <b>1 2 3</b> wave / dance / sit</li>
+            <li><b>M</b> mute, hold <b>V</b> push-to-talk, <b>right-click</b> a player</li>
           </ul>
         </div>
       )}
@@ -97,7 +99,9 @@ export function Hud() {
       <div className={`absolute left-3 flex flex-col gap-2 ${ui.isTouch ? 'top-16' : 'bottom-3'}`}>
         <ChatPanel />
         <EmoteBar />
+        <VoicePanel />
       </div>
+      <PlayerMenu />
 
       {nearby && (
         <div className="pointer-events-auto absolute bottom-6 left-1/2 -translate-x-1/2">

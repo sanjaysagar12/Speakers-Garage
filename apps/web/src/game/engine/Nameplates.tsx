@@ -5,6 +5,7 @@ import { useWorld } from './runtime';
 import { QUALITY } from '../config';
 import { useGameStore } from '../../store/useGameStore';
 import { remotes } from '../net/entities';
+import { gameStore } from '../../store/gameStore';
 
 /**
  * Name tags and chat bubbles over players. Each is ONE instanced mesh of camera-facing quads that reads its
@@ -213,6 +214,7 @@ export function Nameplates() {
     const now = performance.now();
     const { names, bubbles } = layers;
     const maxD2 = q.nameTagDistance ** 2;
+    const blocked = gameStore.getState().voice.blocked;
     let n = 0;
     let b = 0;
     for (const e of remotes.entities.values()) {
@@ -228,7 +230,7 @@ export function Nameplates() {
         const slot = slotFor(names.atlas, e.id, info.name, frame, drawName);
         put(names, n++, slot, r.x, r.y + 2.15, r.z, s, info.voice.speaking ? 1 : 0);
       }
-      if (e.chat && e.chat.until > now && b < bubbles.mesh.instanceMatrix.count) {
+      if (e.chat && e.chat.until > now && b < bubbles.mesh.instanceMatrix.count && !blocked.includes(e.id)) {
         const slot = slotFor(bubbles.atlas, e.id, e.chat.text, frame, drawBubble);
         const fade = Math.min(1, (e.chat.until - now) / 600);
         put(bubbles, b++, slot, r.x, r.y + 3.1, r.z, s, fade < 1 ? 1 + fade : 0);

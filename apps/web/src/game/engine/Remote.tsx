@@ -1,12 +1,13 @@
 import { useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Group, Vector3 } from 'three';
+import { Group, Raycaster, Vector2, Vector3, type PerspectiveCamera } from 'three';
 import { ANIM, sanitizeAvatar, type AvatarConfig } from '@shoreline/shared';
 import { Character, type CharacterMotion } from '../models/character/Character';
 import { useWorld } from './runtime';
 import { QUALITY } from '../config';
 import { useGameStore } from '../../store/useGameStore';
 import { remotes, type RemoteEntity } from '../net/entities';
+import { gameStore } from '../../store/gameStore';
 
 interface Slot {
   character: Character;
@@ -18,6 +19,10 @@ interface Slot {
 }
 
 const avatarKey = (a: AvatarConfig) => Object.values(a).join('|');
+const ray = new Raycaster();
+const ndc = new Vector2();
+const body = new Vector3();
+const toBody = new Vector3();
 const UP = new Vector3(0, 1, 0);
 
 /**
@@ -98,9 +103,30 @@ export function RemotePlayers() {
     }
   };
 
-  useFrame((_, rawDt) => {
+  useFrame(({ camera, gl }, rawDt) => {
     const dt = Math.min(rawDt, 0.1);
     remotes.sampleAll(performance.now());
+    // right-click on a player -> player menu (ray vs. a 0.45 m body radius around chest height)
+    const rc = world.input?.rightClick;
+    if (rc && world.input) {
+      world.input.rightClick = null;
+      const rect = gl.domElement.getBoundingClientRect();
+      ndc.set(((rc.x - rect.left) / rect.width) * 2 - 1, -((rc.y - rect.top) / rect.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera as PerspectiveCamera);
+      let best = -1;
+      let bestT = Infinity;
+      for (const s of pool.slots) {
+        if (!s.character.root.visible) continue;
+        body.copy(s.character.root.position).setY(s.character.root.position.y + 0.95);
+        const t = toBody.copy(body).sub(ray.ray.origin).dot(ray.ray.direction);
+        if (t <= 0 || t >= bestT) continue;
+        if (ray.ray.distanceSqToPoint(body) < 0.45 * 0.45 * 2.2) {
+          best = s.entityId;
+          bestT = t;
+        }
+      }
+      if (best >= 0) gameStore.getState().setVoice({ menu: { id: best, x: rc.x, y: rc.y } });
+    }
     if (pool.frame++ % 15 === 0 || remotes.version !== (pool as { v?: number }).v) {
       (pool as { v?: number }).v = remotes.version;
       assign();

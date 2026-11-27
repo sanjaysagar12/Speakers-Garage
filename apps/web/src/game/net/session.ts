@@ -68,7 +68,7 @@ export const session = {
     mine.push(
       a.onEvent((m) => {
         if (!current()) return;
-        if (m.t === 'chat') gameStore.getState().addChat({ id: m.id, name: m.name, text: m.text });
+        if (m.t === 'chat' && !gameStore.getState().voice.blocked.includes(m.id)) gameStore.getState().addChat({ id: m.id, name: m.name, text: m.text });
         if (m.t === 'welcome') {
           gameStore.getState().setNet({ selfId: m.selfId });
           saveToken(room, m.resume); // a reconnect may get a new token

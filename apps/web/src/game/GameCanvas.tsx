@@ -11,6 +11,7 @@ import { LoadingScreen } from '../ui/LoadingScreen';
 import type { GameMap } from './maps/types';
 import { devLog } from '../util/devlog';
 import { session } from './net/session';
+import { voice } from '../voice/voice';
 
 /**
  * Hosts the R3F canvas. On entry: picks the starting tier in 'auto' mode (hardware hints + a ~1 s benchmark,
@@ -66,6 +67,7 @@ export function GameCanvas() {
     void run();
     return () => {
       alive = false;
+      voice.leave();
       session.stop();
     };
   }, [attempt]);

@@ -15,6 +15,27 @@ export interface RosterEntry {
   speaking: boolean;
 }
 
+export interface VoiceUi {
+  joined: boolean;
+  joining: boolean;
+  muted: boolean;
+  deafened: boolean;
+  ptt: boolean;
+  /** the microphone is sending right now */
+  micLive: boolean;
+  speaking: boolean;
+  error?: string;
+  peers: Array<{ id: number; quality: 'good' | 'poor' | 'connecting' }>;
+  inputs: Array<{ id: string; label: string }>;
+  outputs: Array<{ id: string; label: string }>;
+  canPickOutput: boolean;
+  /** per-player volume (0..2) and mute, and blocked players (this session) */
+  peerVolume: Record<number, { volume: number; muted: boolean }>;
+  blocked: number[];
+  /** right-click menu on a player */
+  menu: { id: number; x: number; y: number } | null;
+}
+
 export interface ChatLine {
   key: number;
   id: number;
@@ -59,6 +80,8 @@ export interface GameState {
   roomId: string;
   net: { status: NetStatus; message?: string; room?: string; rtt: number; players: RosterEntry[]; selfId: number };
   chat: ChatLine[];
+  voice: VoiceUi;
+  setVoice: (patch: Partial<VoiceUi>) => void;
   setName: (name: string) => void;
   setAvatar: (patch: Partial<AvatarConfig>) => void;
   replaceAvatar: (a: AvatarConfig) => void;
@@ -128,6 +151,23 @@ function persist(s: Pick<GameState, 'name' | 'avatar' | 'mapId' | 'online' | 'ro
 
 const initial = loadProfile();
 
+/** Blocked players last for the browser session (their ids are per room, so this is per tab). */
+function loadBlocked(): number[] {
+  try {
+    const v = JSON.parse(sessionStorage.getItem('shoreline.blocked.v1') ?? '[]') as unknown;
+    return Array.isArray(v) ? v.filter((x): x is number => Number.isInteger(x)) : [];
+  } catch {
+    return [];
+  }
+}
+export function saveBlocked(ids: number[]): void {
+  try {
+    sessionStorage.setItem('shoreline.blocked.v1', JSON.stringify(ids));
+  } catch {
+    /* storage blocked */
+  }
+}
+
 export const gameStore = createStore<GameState>((set, get) => {
   const save = () => {
     const s = get();
@@ -146,6 +186,23 @@ export const gameStore = createStore<GameState>((set, get) => {
     roomId: initial.roomId,
     net: { status: 'offline', rtt: 0, players: [], selfId: -1 },
     chat: [],
+    voice: {
+      joined: false,
+      joining: false,
+      muted: false,
+      deafened: false,
+      ptt: false,
+      micLive: false,
+      speaking: false,
+      peers: [],
+      inputs: [],
+      outputs: [],
+      canPickOutput: false,
+      peerVolume: {},
+      blocked: loadBlocked(),
+      menu: null,
+    },
+    setVoice: (patch) => set((s) => ({ voice: { ...s.voice, ...patch } })),
     setName: (name) => set({ name: name.slice(0, 18) }),
     setAvatar: (patch) => {
       set((s) => ({ avatar: sanitizeAvatar({ ...s.avatar, ...patch }) }));

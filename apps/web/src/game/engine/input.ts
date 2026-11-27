@@ -5,7 +5,7 @@ import { inputState } from '../../store/input';
  * nothing here triggers React renders.
  *  - WASD / arrows move (camera-relative), Shift runs
  *  - left click / tap: walk there
- *  - right-drag or Q/E: rotate the camera, R resets
+ *  - right-drag or Q/E: rotate the camera, R resets; right-click on a player: player menu
  *  - wheel / pinch: zoom, two-finger twist: rotate
  *  - F / Space / Enter: interact
  */
@@ -17,6 +17,8 @@ export class InputController {
   zoom = 1;
   /** pending click in client px */
   click: { x: number; y: number } | null = null;
+  /** pending right-click (no drag) in client px: opens the player menu when it lands on a player */
+  rightClick: { x: number; y: number } | null = null;
   private readonly queue: Array<'interact' | 'reset' | 'debug'> = [];
   private readonly pointers = new Map<number, { x: number; y: number; sx: number; sy: number; t: number; button: number }>();
   private pinch: { d: number; a: number } | null = null;
@@ -83,6 +85,7 @@ export class InputController {
       if (!p || e.type === 'pointercancel') return;
       const moved = Math.hypot(e.clientX - p.sx, e.clientY - p.sy);
       if (p.button === 0 && moved < 8 && performance.now() - p.t < 450 && this.pointers.size === 0) this.click = { x: e.clientX, y: e.clientY };
+      if (p.button === 2 && moved < 6 && performance.now() - p.t < 450) this.rightClick = { x: e.clientX, y: e.clientY };
     };
     on(el, 'pointerup', end);
     on(el, 'pointercancel', end);

@@ -2,6 +2,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { NET, type Emote } from '@shoreline/shared';
 import { useGameStore } from '../store/useGameStore';
+import { gameStore } from '../store/gameStore';
 import { session } from '../game/net/session';
 import { setLocalEmote } from '../game/net/emotes';
 
@@ -47,7 +48,11 @@ export const NetBadge = memo(function NetBadge() {
           {net.message && <p className="mb-2 text-xs text-bark/70">{net.message}</p>}
           <ul className="max-h-60 space-y-1 overflow-y-auto">
             {players.map((p) => (
-              <li key={p.id} className="flex items-center gap-2">
+              <li
+                key={p.id}
+                className={`flex items-center gap-2 ${p.self ? '' : 'cursor-pointer rounded hover:bg-moss/10'}`}
+                onClick={(e) => !p.self && gameStore.getState().setVoice({ menu: { id: p.id, x: e.clientX, y: e.clientY } })}
+              >
                 <span className={`h-2 w-2 rounded-full ${p.speaking ? 'bg-emerald-500' : p.voice ? 'bg-sky-400' : 'bg-transparent'}`} title={p.voice ? (p.muted ? 'In voice (muted)' : 'In voice') : ''} />
                 <span className="truncate">{p.name}</span>
                 {p.self && <span className="text-xs text-bark/50">(you)</span>}
