@@ -30,6 +30,9 @@ export function GameCanvas() {
   useEffect(() => {
     let alive = true;
     const run = async () => {
+      // one task later: React StrictMode's synchronous mount -> cleanup -> mount must start ONE session
+      await new Promise((res) => setTimeout(res, 0));
+      if (!alive) return;
       const st = gameStore.getState();
       if (st.ui.qualityMode === 'auto') {
         const r = await detectTier();

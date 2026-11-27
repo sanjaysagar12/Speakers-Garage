@@ -186,7 +186,7 @@ export const gameStore = createStore<GameState>((set, get) => {
         .toLowerCase()
         .replace(/[^a-z0-9-]/g, '')
         .slice(0, 24);
-      set({ roomId: id || 'beach' });
+      set({ roomId: id });
       save();
     },
     setNet: (patch) => set((s) => ({ net: { ...s.net, ...patch } })),

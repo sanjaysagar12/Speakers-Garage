@@ -176,9 +176,10 @@ export class Room {
     return this.add(transport, name, avatarRaw, now);
   }
 
-  private add(transport: Transport, name: string, avatarRaw: unknown, now: number, rec?: { x: number; z: number; facing: number }): ServerPlayer {
+  private add(transport: Transport, name: string, avatarRaw: unknown, now: number, rec?: { x: number; z: number; facing: number; playerId: number }): ServerPlayer {
     if (this.players.size >= this.opts.capacity) throw new JoinError('full', 'This room is full.');
-    const id = this.allocId();
+    // a stored session (reconnect window over, store still remembers) keeps its id if nobody took it
+    const id = rec && !this.players.has(rec.playerId) ? rec.playerId : this.allocId();
     const others = [...this.players.values()].map((p) => p.sim);
     const spot = rec && !this.env.grid.blockedCircle(rec.x, rec.z, 0.3) ? { x: rec.x, z: rec.z, y: this.map.groundHeight(rec.x, rec.z) } : findSpawn(this.map, this.env.grid, others);
     const sim = newPlayerSim(spot.x, spot.z, spot.y, rec?.facing ?? this.map.spawn.facing);
@@ -242,6 +243,14 @@ export class Room {
     });
   }
 
+  /** The player left on purpose (closed with reason 'leave'): remove now, forget the resume token. */
+  leave(p: ServerPlayer, transport: Transport): void {
+    if (p.transport !== transport) return;
+    p.transport = null;
+    void this.opts.store.delete(p.resumeToken);
+    this.remove(p);
+  }
+
   private remove(p: ServerPlayer): void {
     this.players.delete(p.id);
     this.byToken.delete(p.resumeToken);
@@ -253,6 +262,7 @@ export class Room {
 
   /** Remove immediately (explicit leave, or kicked). */
   kick(p: ServerPlayer, code: ErrorCode, message: string): void {
+    this.opts.log.warn({ room: this.id, id: p.id, code }, 'player kicked');
     p.send(JSON.stringify({ t: 'error', code, message } satisfies ServerMessage));
     p.transport?.close(4002, code);
     p.transport = null;

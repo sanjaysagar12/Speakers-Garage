@@ -29,8 +29,27 @@ fs.mkdirSync(out, { recursive: true });
 const serverDir = path.resolve('../server');
 const srv = spawn(path.join(serverDir, 'node_modules/.bin/tsx'), ['--conditions=source', 'src/index.ts'], {
   cwd: serverDir,
-  env: { ...process.env, PORT: '8787', HOST: '127.0.0.1', NODE_ENV: 'development', LOG_LEVEL: 'warn' },
+  env: { ...process.env, PORT: '8787', HOST: '127.0.0.1', NODE_ENV: 'development', LOG_LEVEL: process.env.MP_LOG ?? 'warn' },
   stdio: ['ignore', 'inherit', 'inherit'],
+  detached: true, // own process group: tsx starts a child node process; kill the whole group
+});
+const killServer = () => {
+  try {
+    process.kill(-srv.pid, 'SIGTERM');
+  } catch {
+    /* already gone */
+  }
+};
+process.on('exit', killServer);
+process.on('uncaughtException', (e) => {
+  console.error(e);
+  killServer();
+  process.exit(1);
+});
+process.on('unhandledRejection', (e) => {
+  console.error(e);
+  killServer();
+  process.exit(1);
 });
 const waitHealth = async () => {
   for (let i = 0; i < 100; i++) {
@@ -54,6 +73,16 @@ async function player(name) {
   const ctx = await browser.newContext({ viewport: { width: 640, height: 400 } });
   const page = await ctx.newPage();
   page.setDefaultTimeout(300000);
+  if (process.env.MP_TRACE_CLOSE)
+    await page.addInitScript(() => {
+      const orig = WebSocket.prototype.close;
+      WebSocket.prototype.close = function (code, reason) {
+        const log = JSON.parse(sessionStorage.getItem('closelog') ?? '[]');
+        log.push({ at: Date.now(), code, reason, stack: new Error().stack.split('\n').slice(1, 10).map((l) => l.trim().replace(/\?v=\w+/, '').replace(/http:\/\/127.0.0.1:5196/, '')).join(' | ') });
+        sessionStorage.setItem('closelog', JSON.stringify(log));
+        return orig.call(this, code, reason);
+      };
+    });
   page.on('pageerror', (e) => errors.push(`${name}: ${e.message}`));
   page.on('console', (m) => m.type() === 'error' && !/toArray/.test(m.text()) && errors.push(`${name} console: ${m.text()}`));
   if (latency || jitter || loss) {
@@ -82,6 +111,18 @@ console.log(`A and B online in room mp-check; B is entity ${bId}`);
 // wait until A has B interpolating
 await A.waitForFunction((id) => window.__game.remotes().some((r) => r.id === id && r.ready), bId, { timeout: 60000 });
 await A.screenshot({ path: `${out}/a-sees-b-idle.png` });
+
+// social: B says hello and waves; A should get the chat line and see the bubble + wave
+await B.keyboard.press('t');
+await B.keyboard.type('hello from Ben <b>!</b>');
+await B.keyboard.press('Enter');
+await B.keyboard.press('1');
+await A.waitForFunction(() => window.__store.getState().chat.some((l) => l.name === 'Ben'), null, { timeout: 10000 });
+const chatLine = await A.evaluate(() => window.__store.getState().chat.find((l) => l.name === 'Ben').text);
+await A.waitForTimeout(1200);
+const bAnim = await A.evaluate((id) => window.__game.remotes().find((r) => r.id === id)?.anim ?? -1, bId);
+await A.screenshot({ path: `${out}/a-sees-b-chat-wave.png` });
+console.log(`A got chat "${chatLine}", B's animation byte as seen by A: ${bAnim} (emote ${bAnim >> 4})`);
 
 // A records B every animation frame while B walks: forward, turn, run
 const rec = A.evaluate(
@@ -126,6 +167,20 @@ clearInterval(bPoll);
 await A.screenshot({ path: `${out}/a-sees-b-after-walk.png` });
 await B.screenshot({ path: `${out}/b-view.png` });
 
+// reconnect: B reloads the page and must come back as the same player
+const roster = await A.evaluate(() => window.__store.getState().net.players.map((p) => p.name).sort().join(','));
+const tokenBefore = await B.evaluate(() => sessionStorage.getItem('shoreline.resume.v1'));
+await B.reload();
+const tokenAfterReload = await B.evaluate(() => sessionStorage.getItem('shoreline.resume.v1'));
+console.log(`B token before reload ${tokenBefore}\nB token after reload  ${tokenAfterReload}`);
+if (process.env.MP_TRACE_CLOSE) console.log('B close calls:', await B.evaluate(() => sessionStorage.getItem('closelog')));
+await B.waitForFunction(() => window.__store);
+await B.evaluate(() => window.__store.getState().setUi({ hintOpen: false, qualityMode: 'ultralow', quality: 'ultralow' }));
+await B.click('form button[type=submit]');
+(await B.waitForFunction(() => window.__game && window.__game.net().status === 'online', null, { timeout: 300000 })).dispose();
+const bIdAfter = await B.evaluate(() => window.__game.net().selfId);
+console.log(`B reloaded: id ${bId} -> ${bIdAfter} (${bId === bIdAfter ? 'resumed' : 'NEW PLAYER'}); A's roster before: ${roster}`);
+
 // smoothness: per-frame displacement and jerk of B as A renders it
 const steps = [];
 for (let i = 1; i < samples.length; i++) {
@@ -142,7 +197,14 @@ for (let i = 1; i < steps.length - 1; i++) if (steps[i - 1].v > 1 && steps[i + 1
 const net = { A: await A.evaluate(() => window.__game.net()), B: await B.evaluate(() => window.__game.net()) };
 const bDist = bTrack.length > 1 ? Math.hypot(bTrack.at(-1).x - bTrack[0].x, bTrack.at(-1).z - bTrack[0].z) : 0;
 const maxErr = Math.max(0, ...bTrack.map((s) => s.err));
+const landing = await browser.newPage({ viewport: { width: 900, height: 1100 } });
+await landing.goto(url);
+await landing.waitForTimeout(2500);
+await landing.screenshot({ path: `${out}/landing-rooms.png` });
 const result = {
+  chat: chatLine,
+  bEmoteSeenByA: bAnim >> 4,
+  resumedSameId: bId === bIdAfter,
   network: { latencyMs: latency, jitterMs: jitter, lossPct: loss },
   frames: samples.length,
   avgFrameMs: +(samples.at(-1).t / samples.length).toFixed(1),
@@ -160,5 +222,5 @@ fs.writeFileSync(`${out}/result.json`, JSON.stringify({ ...result, samples }, nu
 console.log(JSON.stringify(result, null, 2));
 await browser.close();
 await vite.close();
-srv.kill('SIGTERM');
+killServer();
 process.exit(errors.length ? 1 : 0);

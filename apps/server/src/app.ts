@@ -148,10 +148,14 @@ export async function buildApp({ env, store = new MemoryPlayerStore() }: AppDeps
         }
       });
 
-      ws.on('close', () => {
+      ws.on('close', (code, reason) => {
         clearTimeout(joinTimer);
         clearInterval(beat);
-        if (player && room) room.disconnect(player, transport);
+        if (!player || !room) return;
+        app.log.info({ room: room.id, id: player.id, code, reason: reason.toString() }, 'socket closed');
+        // an explicit "leave world" is gone at once; anything else may come back within the window
+        if (code === 1000 && reason.toString() === 'leave') room.leave(player, transport);
+        else room.disconnect(player, transport);
       });
       ws.on('error', (e) => app.log.warn({ err: e.message }, 'socket error'));
     },

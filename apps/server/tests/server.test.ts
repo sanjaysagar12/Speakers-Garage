@@ -159,6 +159,18 @@ describe('reconnection', () => {
     a2.close();
   });
 
+  it('an explicit leave removes the player at once', async () => {
+    const a = await connect(srv.url);
+    a.send(joinMsg('Stay', 'bye'));
+    await a.waitFor('welcome');
+    const b = await connect(srv.url);
+    b.send(joinMsg('Go', 'bye'));
+    const wb = await b.waitFor('welcome');
+    b.ws.close(1000, 'leave');
+    await a.waitFor('left', (m) => m.id === wb.selfId, 2000);
+    a.close();
+  });
+
   it('a second tab with the same token takes over; the first is told why', async () => {
     const a = await connect(srv.url);
     a.send(joinMsg('Twin', 'tabs'));

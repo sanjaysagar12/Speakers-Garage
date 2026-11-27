@@ -3,6 +3,7 @@ import { gameStore } from '../store/gameStore';
 import { useGameStore } from '../store/useGameStore';
 import { loadMap } from '../game/maps/registry';
 import type { GameMap } from '../game/maps/types';
+import { remotes } from '../game/net/entities';
 
 const SIZE = 180;
 /** metres shown across the minimap */
@@ -104,6 +105,17 @@ export const Minimap = memo(function Minimap() {
         ctx.strokeStyle = '#4A3A2C';
         ctx.stroke();
       }
+      // other players (interpolated positions)
+      for (const e of remotes.entities.values()) {
+        if (!e.render.ready) continue;
+        ctx.beginPath();
+        ctx.arc(e.render.x, e.render.z, 1.3, 0, Math.PI * 2);
+        ctx.fillStyle = '#2F6FE0';
+        ctx.fill();
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
+      }
       ctx.restore();
       // player arrow at the centre, pointing where the body faces relative to the camera
       ctx.save();
@@ -136,8 +148,13 @@ export const Minimap = memo(function Minimap() {
     const unsub = gameStore.subscribe((s, prev) => {
       if (s.position !== prev.position && !raf) raf = requestAnimationFrame(draw);
     });
+    // others move without us moving: redraw at 4 Hz while anyone is in view
+    const timer = window.setInterval(() => {
+      if (remotes.entities.size && !raf) raf = requestAnimationFrame(draw);
+    }, 250);
     return () => {
       unsub();
+      window.clearInterval(timer);
       if (raf) cancelAnimationFrame(raf);
     };
   }, [map]);

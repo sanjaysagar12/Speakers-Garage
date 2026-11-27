@@ -48,19 +48,19 @@ export function serverHttp(): string {
   return `${location.origin}/api`;
 }
 
-const RESUME_KEY = 'shoreline.resume.v1';
-
 export interface JoinOptions {
   room: string;
   map: string;
+  /** resume token from an earlier session in this tab (the session layer stores it) */
+  resume?: string;
 }
 
 /**
  * WebSocket implementation of NetworkAdapter (authoritative server).
  *  - join(): connect, send `join`, resolve on `welcome` (reject on full / version / bad name / timeout)
  *  - inputs and snapshots are binary; everything else is JSON
- *  - lost connection: reconnect with exponential backoff + jitter, resuming the same player (token kept
- *    per tab in sessionStorage, so a page refresh resumes too, and a second tab is a second player)
+ *  - lost connection: reconnect with exponential backoff + jitter, resuming the same player (the session
+ *    layer keeps the token per tab, so a page refresh resumes too, and a second tab is a second player)
  *  - status changes are reported through `onStatus` for the UI
  */
 export class WebSocketAdapter implements NetworkAdapter {
@@ -82,6 +82,8 @@ export class WebSocketAdapter implements NetworkAdapter {
   private readonly statusE = emitter<{ status: NetStatus; message?: string }>();
   status: NetStatus = 'offline';
   welcome: Extract<ServerMessage, { t: 'welcome' }> | null = null;
+  /** current resume token (from the latest welcome) */
+  resume: string | undefined;
   /** round-trip time (ms), smoothed */
   rtt = 0;
   bytesIn = 0;
@@ -90,7 +92,9 @@ export class WebSocketAdapter implements NetworkAdapter {
   constructor(
     private readonly url: string,
     private readonly opts: JoinOptions,
-  ) {}
+  ) {
+    this.resume = opts.resume;
+  }
 
   onStatus(cb: Listener<{ status: NetStatus; message?: string }>): Unsubscribe {
     return this.statusE.on(cb);
@@ -99,25 +103,6 @@ export class WebSocketAdapter implements NetworkAdapter {
   private setStatus(status: NetStatus, message?: string): void {
     this.status = status;
     this.statusE.emit({ status, message });
-  }
-
-  private get resumeToken(): string | undefined {
-    try {
-      const raw = sessionStorage.getItem(RESUME_KEY);
-      const r = raw ? (JSON.parse(raw) as { room: string; token: string }) : null;
-      return r && r.room === this.opts.room ? r.token : undefined;
-    } catch {
-      return undefined;
-    }
-  }
-
-  private set resumeToken(token: string | undefined) {
-    try {
-      if (token) sessionStorage.setItem(RESUME_KEY, JSON.stringify({ room: this.opts.room, token }));
-      else sessionStorage.removeItem(RESUME_KEY);
-    } catch {
-      /* storage blocked: no resume */
-    }
   }
 
   /** Connect and join. Resolves on the welcome (also after a reconnect: see onEvent 'welcome'). */
@@ -161,7 +146,7 @@ export class WebSocketAdapter implements NetworkAdapter {
     this.ws = ws;
     ws.onopen = () => {
       const p = this.profile!;
-      const msg: ClientMessage = { t: 'join', v: PROTOCOL_VERSION, name: p.name, avatar: p.avatar, room: this.opts.room, map: this.opts.map, resume: this.resumeToken };
+      const msg: ClientMessage = { t: 'join', v: PROTOCOL_VERSION, name: p.name, avatar: p.avatar, room: this.opts.room, map: this.opts.map, resume: this.resume };
       ws.send(JSON.stringify(msg));
     };
     ws.onmessage = (e) => this.onMessage(e.data as ArrayBuffer | string);
@@ -219,7 +204,7 @@ export class WebSocketAdapter implements NetworkAdapter {
       case 'welcome':
         this.welcome = m;
         this.attempt = 0;
-        this.resumeToken = m.resume;
+        this.resume = m.resume;
         remotes.reset(m.selfId, m.tickRate);
         for (const p of m.players) if (p.id !== m.selfId) remotes.roster.set(p.id, p);
         this.setStatus('online');
@@ -288,14 +273,24 @@ export class WebSocketAdapter implements NetworkAdapter {
     return this.status === 'online';
   }
 
+  /** A join that was superseded (world left while joining): leave on the server, touch no shared state. */
+  abort(): void {
+    this.closedByUs = true;
+    window.clearTimeout(this.retryTimer);
+    window.clearInterval(this.pingTimer);
+    this.ws?.close(1000, 'leave');
+    this.ws = null;
+  }
+
   // ---- NetworkAdapter (original seam)
+  /** Leave for good: the server removes the player at once (close reason 'leave'); the token is forgotten. */
   leave(): void {
     this.closedByUs = true;
     window.clearTimeout(this.retryTimer);
     window.clearInterval(this.pingTimer);
     this.ws?.close(1000, 'leave');
     this.ws = null;
-    this.resumeToken = undefined;
+    this.resume = undefined;
     remotes.clear();
     this.setStatus('offline');
   }

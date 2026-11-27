@@ -1,5 +1,6 @@
 import { useGameStore } from '../store/useGameStore';
 import { AvatarCustomizer } from './AvatarCustomizer';
+import { RoomPicker } from './RoomPicker';
 
 export function Landing() {
   const name = useGameStore((s) => s.name);
@@ -32,6 +33,7 @@ export function Landing() {
               className="w-full rounded-2xl border-2 border-moss/50 bg-white px-4 py-2 text-lg text-bark outline-none focus:border-moss"
             />
           </label>
+          <RoomPicker />
           <AvatarCustomizer />
           <button
             type="submit"

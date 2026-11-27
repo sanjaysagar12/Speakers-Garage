@@ -189,6 +189,23 @@ describe('lifecycle and voice', () => {
     room.stop();
   });
 
+  it('after the window, the stored session restores the same id and position', async () => {
+    const { room, run, join } = makeRoom();
+    await join('A');
+    const b = await join('B');
+    b.p.sim.x += 3;
+    const { id, resumeToken } = b.p;
+    const x = b.p.sim.x;
+    room.disconnect(b.p, b.tr);
+    await new Promise((r) => setTimeout(r, 10)); // store.put is async
+    run(Math.ceil(NET.reconnectWindowMs / 50) + 2);
+    expect(room.players.has(id)).toBe(false);
+    const again = await room.join(new FakeTransport(), 'B', sanitizeAvatar({}), resumeToken);
+    expect(again.id).toBe(id);
+    expect(again.sim.x).toBeCloseTo(x, 6);
+    room.stop();
+  });
+
   it('relays voice signaling only between nearby players who joined voice', async () => {
     const { room, join } = makeRoom();
     const a = await join('A');

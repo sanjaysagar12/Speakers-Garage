@@ -4,7 +4,9 @@ import { ANIM, fromFixed, fromHeading, fromSpeedByte, type PlayerInfo, type Snap
  * Remote players for the render loop: a mutable store, never React state. Snapshots (20 Hz) are buffered
  * per entity and played back `delay` ms in the past, interpolating between the two samples around the
  * render time. When a snapshot is late, motion is extrapolated along the last velocity for up to 200 ms,
- * then held. The delay adapts to the measured jitter (100 ms at a steady 20 Hz, more on a bad network).
+ * then held. The delay adapts to the peak arrival jitter (100 ms at a steady 20 Hz, up to 300 ms on a bad
+ * network or a busy device), and a visual smoothing layer turns any remaining correction into a short
+ * catch-up instead of a jump.
  *
  * Everything here is preallocated per entity; a snapshot allocates nothing.
  */
@@ -36,12 +38,18 @@ export interface RenderState {
   ready: boolean;
 }
 
+/** fastest the rendered position may catch up (m/s): 1.5x run speed; beyond 3 m it's a teleport (snap) */
+const CATCH_UP_SPEED = 10;
+const SNAP_DISTANCE = 3;
+
 export class RemoteEntity {
   readonly samples: Sample[] = Array.from({ length: RING }, () => ({ t: 0, x: 0, z: 0, y: 0, h: 0, anim: 0, speed: 0 }));
   /** index of the newest sample, and how many are valid */
   head = -1;
   count = 0;
   readonly render: RenderState = { x: 0, z: 0, y: 0, heading: 0, vx: 0, vz: 0, speed: 0, anim: 0, ready: false };
+  /** the interpolated/extrapolated state for this frame, before visual smoothing */
+  private readonly target: RenderState = { x: 0, z: 0, y: 0, heading: 0, vx: 0, vz: 0, speed: 0, anim: 0, ready: false };
   /** speech bubble */
   chat: { text: string; until: number } | null = null;
   constructor(readonly id: number) {}
@@ -70,10 +78,39 @@ export class RemoteEntity {
     return this.samples[(this.head - back + RING * 2) % RING];
   }
 
-  /** Update `render` for render time `rt` (server ms). */
-  sample(rt: number): void {
-    const r = this.render;
+  /**
+   * Update `render` for render time `rt` (server ms); `dt` = seconds since the last frame. The rendered
+   * position follows the interpolated target but never faster than CATCH_UP_SPEED, so a late burst of data
+   * becomes a short quick catch-up instead of a jump.
+   */
+  sample(rt: number, dt: number): void {
     if (this.count === 0) return;
+    this.interpolate(rt);
+    const t = this.target;
+    const r = this.render;
+    const dx = t.x - r.x;
+    const dz = t.z - r.z;
+    const d = Math.hypot(dx, dz);
+    const maxStep = Math.max(Math.hypot(t.vx, t.vz), CATCH_UP_SPEED) * dt;
+    if (!r.ready || d > SNAP_DISTANCE || d <= maxStep) {
+      r.x = t.x;
+      r.z = t.z;
+    } else {
+      r.x += (dx / d) * maxStep;
+      r.z += (dz / d) * maxStep;
+    }
+    r.y += (t.y - r.y) * Math.min(1, dt * 15);
+    if (!r.ready) r.y = t.y;
+    r.heading = t.heading;
+    r.vx = t.vx;
+    r.vz = t.vz;
+    r.speed = t.speed;
+    r.anim = t.anim;
+    r.ready = true;
+  }
+
+  private interpolate(rt: number): void {
+    const r = this.target;
     const newest = this.at(0);
     if (this.count === 1 || rt >= newest.t) {
       // late snapshot: extrapolate briefly along the last velocity, then hold
@@ -129,11 +166,12 @@ class RemoteStore {
   private offset = 0;
   private synced = false;
   private lastArrival = 0;
-  /** EWMA of |inter-arrival - tickMs| */
+  /** decaying peak of |inter-arrival - tickMs| (ms) */
   jitter = 0;
   /** current interpolation delay (ms) */
   delay = 100;
   private lastRender = 0;
+  private lastNow = 0;
   /** bumped whenever the roster or the set of entities changes (UI polls this at a low rate) */
   version = 0;
 
@@ -170,11 +208,12 @@ class RemoteStore {
     // ease toward early arrivals (less delay) faster than toward late ones; never jump: a jump in the
     // render clock shows as a speed spike in every remote player
     if (this.lastArrival) {
+      // peak (decaying) deviation of the arrival interval: bursts must be covered, not averaged away
       const dev = Math.abs(now - this.lastArrival - this.tickMs);
-      this.jitter += (dev - this.jitter) * 0.1;
+      this.jitter = Math.max(dev, this.jitter * 0.97);
     }
     this.lastArrival = now;
-    this.delay = Math.min(250, Math.max(100, this.tickMs * 2 + this.jitter * 2.5));
+    this.delay = Math.min(300, Math.max(100, this.tickMs * 2 + this.jitter));
 
     // entities in the snapshot get a new sample; others in view repeat their last (unchanged)
     for (let i = 0; i < s.count; i++) {
@@ -190,16 +229,32 @@ class RemoteStore {
     for (const ent of this.entities.values()) if (ent.count && ent.samples[ent.head].t < t) ent.repeat(t);
   }
 
-  /** Server-time render clock: monotonic, `delay` ms behind the newest data. */
+  /**
+   * Server-time render clock, `delay` ms behind the newest data. It is never set, only steered: it advances
+   * by real elapsed time at 90-110% speed toward the target, so arrival bursts (a busy main thread, network
+   * jitter) can't make remote players jump. Only an error over 500 ms (tab was hidden) snaps it.
+   */
   renderTime(now: number): number {
-    const rt = now + this.offset - this.delay;
-    this.lastRender = Math.max(this.lastRender, rt);
+    const target = now + this.offset - this.delay;
+    if (!this.lastNow || Math.abs(target - this.lastRender) > 500) {
+      this.lastRender = target;
+      this.lastNow = now;
+      return target;
+    }
+    const dt = now - this.lastNow;
+    this.lastNow = now;
+    const err = target - (this.lastRender + dt);
+    const rate = 1 + Math.max(-0.1, Math.min(0.1, err / 1000));
+    this.lastRender += dt * rate;
     return this.lastRender;
   }
 
+  private lastSampleAt = 0;
   sampleAll(now: number): void {
     const rt = this.renderTime(now);
-    for (const e of this.entities.values()) e.sample(rt);
+    const dt = this.lastSampleAt ? Math.min(0.25, (now - this.lastSampleAt) / 1000) : 0;
+    this.lastSampleAt = now;
+    for (const e of this.entities.values()) e.sample(rt, dt);
   }
 
   clear(): void {
@@ -207,6 +262,8 @@ class RemoteStore {
     this.roster.clear();
     this.selfId = -1;
     this.lastRender = 0;
+    this.lastNow = 0;
+    this.lastSampleAt = 0;
     this.version++;
   }
 }

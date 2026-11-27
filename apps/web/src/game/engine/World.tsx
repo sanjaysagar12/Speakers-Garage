@@ -17,6 +17,7 @@ import { gameStore } from '../../store/gameStore';
 import { deckAt } from '@shoreline/shared';
 import { useGameStore } from '../../store/useGameStore';
 import { RemotePlayers } from './Remote';
+import { Nameplates } from './Nameplates';
 import { remotes } from '../net/entities';
 import { session } from '../net/session';
 import { AmbientAudio } from '../systems/AmbientAudio';
@@ -171,6 +172,7 @@ export function World({ map, quality }: { map: GameMap; quality: Quality }) {
       {q.drift > 0 && <Drift kind={map.ambient.drift} count={q.drift} />}
       {map.ambient.fire && q.smoke && <Smoke at={map.ambient.fire} />}
       <RemotePlayers />
+      <Nameplates />
       <Audio />
       {DebugOverlay && debug && (
         <Suspense fallback={null}>

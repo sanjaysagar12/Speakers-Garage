@@ -7,6 +7,7 @@ import { Dialog } from './Dialog';
 import { Wardrobe } from './Wardrobe';
 import { QualitySettings } from './QualitySettings';
 import { Suspense, lazy } from 'react';
+import { ChatPanel, EmoteBar, NetBadge } from './Social';
 
 const clockLabel = (t: number): string => {
   const hours = (t * 24 + 6) % 24; // phase 0 is midnight-ish; shift so 0.3 reads as late morning
@@ -43,6 +44,7 @@ export function Hud() {
     <div className="pointer-events-none absolute inset-0 z-10 font-display">
       <div className="pointer-events-auto absolute left-3 top-3 flex flex-wrap items-center gap-2">
         <div className="glass rounded-full px-4 py-2 text-lg font-bold text-pine shadow-lg">🌲 {name}</div>
+        <NetBadge />
         <button className={btn} aria-label="Wardrobe" title="Wardrobe" onClick={() => setUi({ wardrobeOpen: true })}>
           👕
         </button>
@@ -71,7 +73,7 @@ export function Hud() {
       </div>
 
       {ui.hintOpen && !ui.isTouch && (
-        <div className="glass pointer-events-auto absolute bottom-3 left-3 max-w-xs rounded-2xl p-3 text-sm text-bark shadow-lg">
+        <div className="glass pointer-events-auto absolute bottom-3 right-3 max-w-xs rounded-2xl p-3 text-sm text-bark shadow-lg">
           <button className="absolute right-2 top-1 text-bark/50" aria-label="Dismiss hint" onClick={() => setUi({ hintOpen: false })}>
             ✕
           </button>
@@ -81,6 +83,7 @@ export function Hud() {
             <li><b>Click</b> to walk there</li>
             <li><b>E</b> at a ✦ to look closer</li>
             <li><b>Scroll</b> to zoom</li>
+            <li><b>T</b> chat, <b>1 2 3</b> wave / dance / sit</li>
           </ul>
         </div>
       )}
@@ -90,6 +93,11 @@ export function Hud() {
           Drag the stick, tap the ground to walk, pinch to zoom.
         </div>
       )}
+
+      <div className={`absolute left-3 flex flex-col gap-2 ${ui.isTouch ? 'top-16' : 'bottom-3'}`}>
+        <ChatPanel />
+        <EmoteBar />
+      </div>
 
       {nearby && (
         <div className="pointer-events-auto absolute bottom-6 left-1/2 -translate-x-1/2">
