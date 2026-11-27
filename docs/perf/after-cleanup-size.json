@@ -1,0 +1,55 @@
+{
+  "dist": "dist",
+  "js": {
+    "rawKB": 1711.1,
+    "gzipKB": 386.8,
+    "brotliKB": 319.6
+  },
+  "css": {
+    "rawKB": 17.4,
+    "gzipKB": 4.5
+  },
+  "html": {
+    "rawKB": 0.7
+  },
+  "assets": {
+    "rawKB": 0,
+    "gzipKB": 0
+  },
+  "chunks": [
+    {
+      "file": "assets/App-BmU9tbAJ.js",
+      "kb": 837.6,
+      "gzKB": 151.5
+    },
+    {
+      "file": "assets/runtime-CD3kPKlS.js",
+      "kb": 730.6,
+      "gzKB": 188.5
+    },
+    {
+      "file": "assets/index-BIGVPQNI.js",
+      "kb": 139.6,
+      "gzKB": 45.1
+    },
+    {
+      "file": "assets/DebugOverlay-DotRh9wQ.js",
+      "kb": 2.1,
+      "gzKB": 1.1
+    },
+    {
+      "file": "assets/DebugPanel-mMSnlqjs.js",
+      "kb": 1.1,
+      "gzKB": 0.6
+    }
+  ],
+  "project": {
+    "trackedFiles": 112,
+    "trackedFolders": 25,
+    "locSrc": 8286,
+    "locScripts": 6105,
+    "dependencies": 9,
+    "devDependencies": 20,
+    "installedPackages": 276
+  }
+}

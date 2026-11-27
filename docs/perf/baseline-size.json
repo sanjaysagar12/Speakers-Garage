@@ -1,0 +1,50 @@
+{
+  "dist": "dist",
+  "js": {
+    "rawKB": 1715.1,
+    "gzipKB": 388.5,
+    "brotliKB": 320.8
+  },
+  "css": {
+    "rawKB": 17.3,
+    "gzipKB": 4.5
+  },
+  "html": {
+    "rawKB": 0.7
+  },
+  "assets": {
+    "rawKB": 10613.9,
+    "gzipKB": 10040.8
+  },
+  "chunks": [
+    {
+      "file": "assets/Sun-DlCLTqfr.js",
+      "kb": 864.7,
+      "gzKB": 231.7
+    },
+    {
+      "file": "assets/App-Rnzj-iPD.js",
+      "kb": 706.1,
+      "gzKB": 109.5
+    },
+    {
+      "file": "assets/index-MJsgbla0.js",
+      "kb": 139.7,
+      "gzKB": 45.2
+    },
+    {
+      "file": "assets/ShotsScene-Cq7D-bD6.js",
+      "kb": 4.6,
+      "gzKB": 2.2
+    }
+  ],
+  "project": {
+    "trackedFiles": 108,
+    "trackedFolders": 24,
+    "locSrc": 8283,
+    "locScripts": 5900,
+    "dependencies": 10,
+    "devDependencies": 20,
+    "installedPackages": 278
+  }
+}

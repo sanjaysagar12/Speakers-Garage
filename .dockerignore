@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/.perf-dist
+**/.turbo
+**/perf-results
+**/mp-check
+**/voice-check
+**/shots
+**/pier-check
+docs
+.git
+.env

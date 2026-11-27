@@ -1,0 +1,32 @@
+{
+  "label": "final-mobile-low-4x",
+  "quality": "low",
+  "throttle": 4,
+  "viewport": "mobile 412x860 @2.6",
+  "renderer": "SwiftShader (software GL, headless)",
+  "timeToInteractiveMs": 906,
+  "worldReadyMs": 16290,
+  "transferKB": {
+    "landing": 289,
+    "world": 66
+  },
+  "walk": {
+    "frames": 142,
+    "avgFps": 4.7,
+    "low1Fps": 1,
+    "avgFrameMs": 212.5,
+    "p99FrameMs": 966.7
+  },
+  "render": {
+    "calls": 130,
+    "triangles": 267057,
+    "geometries": 114,
+    "textures": 4,
+    "programs": 24,
+    "callsMidWalk": 132
+  },
+  "heapAfterMB": 72.9,
+  "heapAtSeconds": 120,
+  "leak": null,
+  "errors": []
+}

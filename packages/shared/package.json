@@ -1,0 +1,41 @@
+{
+  "name": "@speakersgarage/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "description": "Protocol, schemas, movement simulation, collision and map data shared by the web client and the server. Pure TypeScript: no DOM, no three.js.",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schemas": {
+      "source": "./src/net/schemas.ts",
+      "types": "./dist/schemas.d.ts",
+      "import": "./dist/schemas.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b && tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc -b",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@speakersgarage/config": "workspace:*",
+    "@types/node": "^26.6.11",
+    "eslint": "^10.15.0",
+    "tsup": "^9.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^3.2.4"
+  }
+}

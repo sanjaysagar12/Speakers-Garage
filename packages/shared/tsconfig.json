@@ -1,0 +1,12 @@
+{
+  "extends": "@speakersgarage/config/tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": ".",
+    "outDir": "dist/.tsc",
+    "types": ["node"],
+    "noEmit": false,
+    "emitDeclarationOnly": true
+  },
+  "include": ["src", "src/**/*.json", "tests", "tsup.config.ts", "vitest.config.ts"]
+}

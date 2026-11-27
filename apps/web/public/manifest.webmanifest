@@ -1,0 +1,14 @@
+{
+  "name": "Speaker's Garage",
+  "short_name": "Speaker's Garage",
+  "description": "Hang out in a shared world and talk to whoever is nearby.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2E4A35",
+  "theme_color": "#2E4A35",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

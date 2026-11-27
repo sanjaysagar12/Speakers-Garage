@@ -1,0 +1,1405 @@
+{
+ "id": "beach",
+ "name": "Beach",
+ "tagline": "A turquoise bay, striped umbrellas and a lighthouse on the point.",
+ "size": [
+  120,
+  80
+ ],
+ "domain": [
+  -40,
+  -40,
+  200,
+  160
+ ],
+ "fieldRes": 0.5,
+ "note": "Shore frame: at = [s, d]. s runs along the base line from origin in direction angleDeg; d is metres inland from the (curved) shoreline, negative = out to sea. face = degrees relative to facing the sea.",
+ "shore": {
+  "origin": [
+   10,
+   100
+  ],
+  "angleDeg": -32.7,
+  "offsets": [
+   [
+    -80,
+    0
+   ],
+   [
+    -20,
+    0
+   ],
+   [
+    0,
+    -1
+   ],
+   [
+    12,
+    -4
+   ],
+   [
+    24,
+    1.5
+   ],
+   [
+    38,
+    -4.5
+   ],
+   [
+    52,
+    0.5
+   ],
+   [
+    66,
+    -1.5
+   ],
+   [
+    80,
+    2
+   ],
+   [
+    90,
+    3
+   ],
+   [
+    96,
+    7
+   ],
+   [
+    101,
+    13
+   ],
+   [
+    106,
+    15
+   ],
+   [
+    110,
+    12
+   ],
+   [
+    114,
+    6
+   ],
+   [
+    120,
+    2
+   ],
+   [
+    135,
+    0
+   ],
+   [
+    240,
+    0
+   ]
+  ]
+ },
+ "deepFrom": -5.5,
+ "spawn": {
+  "at": [
+   62,
+   12
+  ],
+  "face": 180
+ },
+ "zones": {
+  "grass": [
+   {
+    "at": [
+     64,
+     38
+    ],
+    "r": 9
+   },
+   {
+    "at": [
+     56,
+     46
+    ],
+    "r": 8
+   },
+   {
+    "at": [
+     76,
+     42
+    ],
+    "r": 8
+   },
+   {
+    "at": [
+     36,
+     40
+    ],
+    "r": 7
+   },
+   {
+    "at": [
+     86,
+     44
+    ],
+    "r": 7
+   },
+   {
+    "at": [
+     48,
+     58
+    ],
+    "r": 10
+   },
+   {
+    "at": [
+     70,
+     60
+    ],
+    "r": 12
+   },
+   {
+    "at": [
+     96,
+     40
+    ],
+    "r": 6
+   },
+   {
+    "at": [
+     30,
+     60
+    ],
+    "r": 12
+   },
+   {
+    "at": [
+     92,
+     62
+    ],
+    "r": 12
+   },
+   {
+    "at": [
+     112,
+     36
+    ],
+    "r": 9
+   },
+   {
+    "at": [
+     60,
+     76
+    ],
+    "r": 14
+   },
+   {
+    "at": [
+     102,
+     14
+    ],
+    "r": 4
+   }
+  ],
+  "rock": [
+   {
+    "at": [
+     104,
+     2
+    ],
+    "r": 6
+   },
+   {
+    "at": [
+     109,
+     0
+    ],
+    "r": 5
+   },
+   {
+    "at": [
+     99,
+     1
+    ],
+    "r": 4
+   },
+   {
+    "at": [
+     118,
+     1
+    ],
+    "r": 3
+   }
+  ]
+ },
+ "decks": [
+  {
+   "id": "bar",
+   "at": [
+    92,
+    20
+   ],
+   "face": 0,
+   "w": 7,
+   "len": 5,
+   "y": 0.38,
+   "centered": true
+  }
+ ],
+ "path": {
+  "points": [
+   [
+    60,
+    24
+   ],
+   [
+    58,
+    30
+   ],
+   [
+    61,
+    36
+   ],
+   [
+    66,
+    40
+   ],
+   [
+    74,
+    38
+   ],
+   [
+    82,
+    34
+   ],
+   [
+    88,
+    28
+   ],
+   [
+    90,
+    24
+   ]
+  ],
+  "spacing": 0.8,
+  "branch": [
+   [
+    58,
+    30
+   ],
+   [
+    52,
+    36
+   ],
+   [
+    48,
+    44
+   ],
+   [
+    46,
+    52
+   ]
+  ]
+ },
+ "props": [
+  {
+   "type": "signpost",
+   "at": [
+    60,
+    22
+   ],
+   "face": 160,
+   "params": {
+    "color": "#EC847C"
+   }
+  },
+  {
+   "type": "umbrella",
+   "at": [
+    46,
+    8
+   ],
+   "params": {
+    "style": "radial",
+    "b": "#EC847C"
+   }
+  },
+  {
+   "type": "umbrella",
+   "at": [
+    51,
+    12
+   ],
+   "params": {
+    "style": "rings",
+    "b": "#11738A"
+   }
+  },
+  {
+   "type": "umbrella",
+   "at": [
+    55,
+    7
+   ],
+   "params": {
+    "style": "radial",
+    "b": "#04A4B4"
+   }
+  },
+  {
+   "type": "umbrella",
+   "at": [
+    61,
+    6.5
+   ],
+   "params": {
+    "style": "mixed",
+    "b": "#EC847C"
+   }
+  },
+  {
+   "type": "umbrella",
+   "at": [
+    66,
+    11
+   ],
+   "params": {
+    "style": "radial",
+    "b": "#1F5F73"
+   }
+  },
+  {
+   "type": "umbrella",
+   "at": [
+    70,
+    6.5
+   ],
+   "params": {
+    "style": "rings",
+    "b": "#EC847C"
+   }
+  },
+  {
+   "type": "umbrella",
+   "at": [
+    79,
+    9
+   ],
+   "params": {
+    "style": "radial",
+    "b": "#04A4B4"
+   }
+  },
+  {
+   "type": "umbrella",
+   "at": [
+    84,
+    13
+   ],
+   "params": {
+    "style": "mixed",
+    "b": "#11738A"
+   }
+  },
+  {
+   "type": "umbrella",
+   "at": [
+    41,
+    13
+   ],
+   "params": {
+    "style": "rings",
+    "b": "#04A4B4"
+   }
+  },
+  {
+   "type": "umbrella",
+   "at": [
+    57,
+    15
+   ],
+   "params": {
+    "style": "radial",
+    "b": "#EC847C"
+   }
+  },
+  {
+   "type": "lounger",
+   "at": [
+    47.6,
+    9.2
+   ],
+   "face": 175,
+   "params": {
+    "b": "#EC847C"
+   }
+  },
+  {
+   "type": "lounger",
+   "at": [
+    45,
+    9.6
+   ],
+   "face": 185,
+   "params": {
+    "b": "#EC847C"
+   }
+  },
+  {
+   "type": "lounger",
+   "at": [
+    52.4,
+    13.3
+   ],
+   "face": 180,
+   "params": {
+    "b": "#11738A"
+   }
+  },
+  {
+   "type": "lounger",
+   "at": [
+    62.4,
+    7.6
+   ],
+   "face": 178,
+   "params": {
+    "b": "#11738A"
+   }
+  },
+  {
+   "type": "lounger",
+   "at": [
+    59.8,
+    8.0
+   ],
+   "face": 182,
+   "params": {
+    "b": "#EC847C"
+   }
+  },
+  {
+   "type": "lounger",
+   "at": [
+    71.2,
+    7.8
+   ],
+   "face": 176,
+   "params": {
+    "b": "#04A4B4"
+   }
+  },
+  {
+   "type": "lounger",
+   "at": [
+    80.3,
+    10.2
+   ],
+   "face": 184,
+   "params": {
+    "b": "#11738A"
+   }
+  },
+  {
+   "type": "lounger",
+   "at": [
+    85.2,
+    14.2
+   ],
+   "face": 180,
+   "params": {
+    "b": "#EC847C"
+   }
+  },
+  {
+   "type": "towel",
+   "at": [
+    54.6,
+    9.2
+   ],
+   "face": 95,
+   "params": {
+    "b": "#EC847C"
+   }
+  },
+  {
+   "type": "towel",
+   "at": [
+    56.3,
+    9.5
+   ],
+   "face": 88,
+   "params": {
+    "b": "#11738A"
+   }
+  },
+  {
+   "type": "towel",
+   "at": [
+    67.6,
+    12.8
+   ],
+   "face": 82,
+   "params": {
+    "b": "#04A4B4"
+   }
+  },
+  {
+   "type": "towel",
+   "at": [
+    65.0,
+    13.1
+   ],
+   "face": 98,
+   "params": {
+    "b": "#EC847C"
+   }
+  },
+  {
+   "type": "towel",
+   "at": [
+    76.5,
+    8.0
+   ],
+   "face": 70,
+   "params": {
+    "b": "#1F5F73"
+   }
+  },
+  {
+   "type": "towel",
+   "at": [
+    42.4,
+    15.2
+   ],
+   "face": 92,
+   "params": {
+    "b": "#EC847C"
+   }
+  },
+  {
+   "type": "towel",
+   "at": [
+    88,
+    9
+   ],
+   "face": 110,
+   "params": {
+    "b": "#04A4B4"
+   }
+  },
+  {
+   "type": "ball",
+   "at": [
+    58.5,
+    10.5
+   ],
+   "params": {
+    "b": "#EC847C"
+   }
+  },
+  {
+   "type": "ball",
+   "at": [
+    38.5,
+    19.5
+   ],
+   "params": {
+    "b": "#04A4B4"
+   }
+  },
+  {
+   "type": "flipflops",
+   "at": [
+    55.5,
+    11.2
+   ],
+   "face": 30
+  },
+  {
+   "type": "flipflops",
+   "at": [
+    66.8,
+    14.6
+   ],
+   "face": -20,
+   "params": {
+    "color": "#04A4B4"
+   }
+  },
+  {
+   "type": "flipflops",
+   "at": [
+    49.4,
+    10.6
+   ],
+   "face": 60,
+   "params": {
+    "color": "#F6C945"
+   }
+  },
+  {
+   "type": "sandcastle",
+   "at": [
+    64,
+    2.6
+   ]
+  },
+  {
+   "type": "surfboard",
+   "at": [
+    58.3,
+    3.0
+   ],
+   "params": {
+    "a": "#FBF6EE"
+   }
+  },
+  {
+   "type": "surfboard",
+   "at": [
+    59.0,
+    3.4
+   ],
+   "params": {
+    "a": "#F6C945"
+   }
+  },
+  {
+   "type": "surfboard",
+   "at": [
+    94.6,
+    15.0
+   ],
+   "params": {
+    "a": "#04A4B4"
+   }
+  },
+  {
+   "type": "surfboard",
+   "at": [
+    95.4,
+    15.4
+   ],
+   "params": {
+    "a": "#EC847C"
+   }
+  },
+  {
+   "type": "lifeguard",
+   "at": [
+    55,
+    4.4
+   ],
+   "face": 0
+  },
+  {
+   "type": "volleyball",
+   "at": [
+    36,
+    18
+   ],
+   "face": 90
+  },
+  {
+   "type": "beachbar",
+   "at": [
+    92,
+    20
+   ],
+   "face": 0
+  },
+  {
+   "type": "boardwalk",
+   "at": [
+    92,
+    16.6
+   ],
+   "face": 0,
+   "params": {
+    "length": 9,
+    "width": 1.8,
+    "deckY": 0.12
+   },
+   "offsetX": 2.24
+  },
+  {
+   "type": "stool",
+   "at": [
+    90.6,
+    13.2
+   ]
+  },
+  {
+   "type": "stool",
+   "at": [
+    91.6,
+    13.6
+   ]
+  },
+  {
+   "type": "pier",
+   "at": [
+    74,
+    2.5
+   ],
+   "face": 0,
+   "params": {
+    "length": 24
+   },
+   "y": 0
+  },
+  {
+   "type": "rowboat",
+   "at": [
+    71.2,
+    -9
+   ],
+   "face": 70,
+   "params": {
+    "color": "#FBF6EE"
+   }
+  },
+  {
+   "type": "kayak",
+   "at": [
+    40,
+    3.2
+   ],
+   "face": 80,
+   "params": {
+    "color": "#F6C945"
+   }
+  },
+  {
+   "type": "kayak",
+   "at": [
+    41.6,
+    3.8
+   ],
+   "face": 84,
+   "params": {
+    "color": "#F08A3C"
+   }
+  },
+  {
+   "type": "kayak",
+   "at": [
+    86,
+    -4.2
+   ],
+   "face": 40,
+   "params": {
+    "color": "#04A4B4"
+   }
+  },
+  {
+   "type": "ring",
+   "at": [
+    52,
+    -2.6
+   ],
+   "params": {
+    "b": "#EC847C"
+   }
+  },
+  {
+   "type": "ring",
+   "at": [
+    58,
+    -3.6
+   ],
+   "params": {
+    "b": "#E2574C"
+   }
+  },
+  {
+   "type": "ring",
+   "at": [
+    63.5,
+    -4.6
+   ],
+   "params": {
+    "b": "#04A4B4"
+   }
+  },
+  {
+   "type": "mattress",
+   "at": [
+    55.5,
+    -4.2
+   ],
+   "face": 25
+  },
+  {
+   "type": "mattress",
+   "at": [
+    67,
+    -3.2
+   ],
+   "face": -40,
+   "params": {
+    "color": "#F6C945"
+   }
+  },
+  {
+   "type": "ball",
+   "at": [
+    61,
+    -2.2
+   ],
+   "params": {
+    "b": "#11738A"
+   },
+   "float": true
+  },
+  {
+   "type": "buoy",
+   "at": [
+    48,
+    -11
+   ]
+  },
+  {
+   "type": "buoy",
+   "at": [
+    66,
+    -12
+   ]
+  },
+  {
+   "type": "buoy",
+   "at": [
+    84,
+    -12
+   ]
+  },
+  {
+   "type": "sailboat",
+   "at": [
+    62,
+    -28
+   ],
+   "face": 60
+  },
+  {
+   "type": "sailboat",
+   "at": [
+    92,
+    -34
+   ],
+   "face": 120,
+   "params": {
+    "color": "#FBF6EE"
+   }
+  },
+  {
+   "type": "rowboat",
+   "at": [
+    100,
+    -18
+   ],
+   "face": 30,
+   "params": {
+    "color": "#04A4B4"
+   }
+  },
+  {
+   "type": "sailboat",
+   "at": [
+    40,
+    -38
+   ],
+   "face": 75
+  },
+  {
+   "type": "campfire",
+   "at": [
+    40,
+    30
+   ]
+  },
+  {
+   "type": "log",
+   "at": [
+    40,
+    32.6
+   ],
+   "face": 90
+  },
+  {
+   "type": "log",
+   "at": [
+    42.4,
+    29.4
+   ],
+   "face": 30
+  },
+  {
+   "type": "log",
+   "at": [
+    37.6,
+    29.2
+   ],
+   "face": 150
+  },
+  {
+   "type": "lighthouse",
+   "at": [
+    105,
+    7
+   ],
+   "face": 200
+  },
+  {
+   "type": "cliff",
+   "at": [
+    100,
+    -1.5
+   ],
+   "face": 20,
+   "params": {
+    "w": 6,
+    "h": 2.2,
+    "d": 3
+   }
+  },
+  {
+   "type": "cliff",
+   "at": [
+    106,
+    -1.0
+   ],
+   "face": 0,
+   "params": {
+    "w": 7,
+    "h": 2.6,
+    "d": 3
+   }
+  },
+  {
+   "type": "cliff",
+   "at": [
+    111.5,
+    -0.5
+   ],
+   "face": -30,
+   "params": {
+    "w": 5,
+    "h": 2.0,
+    "d": 3
+   }
+  },
+  {
+   "type": "rock",
+   "at": [
+    97,
+    0.6
+   ],
+   "params": {
+    "size": 1.1
+   }
+  },
+  {
+   "type": "rock",
+   "at": [
+    114,
+    0.3
+   ],
+   "params": {
+    "size": 1.3
+   }
+  },
+  {
+   "type": "rock",
+   "at": [
+    117,
+    1.0
+   ],
+   "params": {
+    "size": 0.8
+   }
+  },
+  {
+   "type": "rock",
+   "at": [
+    103,
+    -4.5
+   ],
+   "params": {
+    "size": 1.4
+   }
+  },
+  {
+   "type": "rock",
+   "at": [
+    109,
+    -4
+   ],
+   "params": {
+    "size": 1.0
+   }
+  },
+  {
+   "type": "rock",
+   "at": [
+    32,
+    1.5
+   ],
+   "params": {
+    "size": 0.9
+   }
+  },
+  {
+   "type": "rock",
+   "at": [
+    30,
+    -1.0
+   ],
+   "params": {
+    "size": 1.2
+   }
+  },
+  {
+   "type": "driftwood",
+   "at": [
+    44,
+    2.4
+   ],
+   "face": 85
+  },
+  {
+   "type": "driftwood",
+   "at": [
+    77,
+    2.8
+   ],
+   "face": 100
+  },
+  {
+   "type": "driftwood",
+   "at": [
+    90,
+    4.0
+   ],
+   "face": 70
+  },
+  {
+   "type": "bush",
+   "at": [
+    88.2,
+    24.2
+   ],
+   "params": {
+    "flowers": true
+   }
+  },
+  {
+   "type": "bush",
+   "at": [
+    96.4,
+    23.6
+   ]
+  },
+  {
+   "type": "bush",
+   "at": [
+    62.6,
+    24.4
+   ],
+   "params": {
+    "flowers": true
+   }
+  },
+  {
+   "type": "bush",
+   "at": [
+    44,
+    33
+   ]
+  },
+  {
+   "type": "bush",
+   "at": [
+    36.5,
+    33
+   ]
+  }
+ ],
+ "palms": {
+  "band": {
+   "s": [
+    36,
+    125
+   ],
+   "d": [
+    17,
+    30
+   ],
+   "count": 16
+  },
+  "grove": {
+   "s": [
+    -20,
+    140
+   ],
+   "d": [
+    44,
+    120
+   ],
+   "count": 70
+  },
+  "explicit": [
+   [
+    50,
+    18
+   ],
+   [
+    68,
+    19
+   ],
+   [
+    86,
+    9
+   ],
+   [
+    44,
+    22
+   ],
+   [
+    97,
+    26
+   ],
+   [
+    100,
+    18
+   ],
+   [
+    74,
+    26
+   ],
+   [
+    54,
+    26
+   ]
+  ]
+ },
+ "rim": {
+  "cliffSpacing": 7,
+  "palmSpacing": 5
+ },
+ "scatter": [
+  {
+   "type": "starfish",
+   "band": [
+    -0.6,
+    3.5
+   ],
+   "s": [
+    30,
+    130
+   ],
+   "count": 34
+  },
+  {
+   "type": "conch",
+   "band": [
+    -0.4,
+    6
+   ],
+   "s": [
+    30,
+    130
+   ],
+   "count": 36
+  },
+  {
+   "type": "scallop",
+   "band": [
+    -0.4,
+    6
+   ],
+   "s": [
+    30,
+    130
+   ],
+   "count": 40
+  },
+  {
+   "type": "pebble",
+   "band": [
+    -1.5,
+    4
+   ],
+   "s": [
+    30,
+    130
+   ],
+   "count": 90
+  },
+  {
+   "type": "conch",
+   "band": [
+    6,
+    30
+   ],
+   "s": [
+    30,
+    130
+   ],
+   "count": 20
+  },
+  {
+   "type": "starfish",
+   "band": [
+    6,
+    24
+   ],
+   "s": [
+    30,
+    130
+   ],
+   "count": 10
+  },
+  {
+   "type": "grass",
+   "zone": "grass",
+   "count": 420
+  },
+  {
+   "type": "flower",
+   "zone": "grass",
+   "count": 120
+  },
+  {
+   "type": "grass",
+   "band": [
+    24,
+    120
+   ],
+   "s": [
+    -20,
+    140
+   ],
+   "count": 260
+  },
+  {
+   "type": "bush",
+   "band": [
+    30,
+    110
+   ],
+   "s": [
+    -20,
+    140
+   ],
+   "count": 30
+  },
+  {
+   "type": "driftwood",
+   "band": [
+    2,
+    5
+   ],
+   "s": [
+    30,
+    128
+   ],
+   "count": 4
+  }
+ ],
+ "interactions": [
+  {
+   "id": "welcome",
+   "at": [
+    60,
+    22
+   ],
+   "radius": 3,
+   "kind": "bubble",
+   "icon": "sign",
+   "title": "Welcome to the beach",
+   "text": "Welcome to the bay! WASD to walk (it follows the camera), Shift to run, click to walk somewhere. Q/E or right-drag turns the view, F talks to a \u2726."
+  },
+  {
+   "id": "bar",
+   "at": [
+    92,
+    16.4
+   ],
+   "radius": 3.5,
+   "kind": "modal",
+   "icon": "bar",
+   "title": "Coral Bar",
+   "text": "Today at the bar:\n\u2022 Coconut water, straight from the palm\n\u2022 Mango & lime cooler\n\u2022 Grilled corn with chili butter\n\nLights come on at sunset (try the \u2600\ufe0f button)."
+  },
+  {
+   "id": "lifeguard",
+   "at": [
+    55,
+    7.2
+   ],
+   "radius": 3,
+   "kind": "bubble",
+   "icon": "flag",
+   "title": "Lifeguard",
+   "text": "Red flag means stay in the shallows today. You can wade out to the floats, but the deep water past the buoys is off limits."
+  },
+  {
+   "id": "volleyball",
+   "at": [
+    36,
+    18
+   ],
+   "radius": 5,
+   "kind": "bubble",
+   "icon": "ball",
+   "title": "Volleyball court",
+   "text": "Teams of two, first to 21. The net is a little low, but nobody's complained yet."
+  },
+  {
+   "id": "campfire",
+   "at": [
+    40,
+    30
+   ],
+   "radius": 3.2,
+   "kind": "modal",
+   "icon": "fire",
+   "title": "Campfire",
+   "text": "Someone left a note by the logs:\n\n\"The lighthouse keeper says on clear nights you can count the boats by their lamps. We got to eleven before the marshmallows ran out.\""
+  },
+  {
+   "id": "pier",
+   "at": [
+    74,
+    -22.5
+   ],
+   "radius": 3.5,
+   "kind": "bubble",
+   "icon": "fish",
+   "title": "End of the pier",
+   "text": "The water is deep and clear out here. A good spot for fishing, or just watching the sails."
+  },
+  {
+   "id": "lighthouse",
+   "at": [
+    104,
+    4.2
+   ],
+   "radius": 4,
+   "kind": "modal",
+   "icon": "light",
+   "title": "Point Lighthouse",
+   "text": "Built on the rocks of the point. The lamp still turns every night, and the keeper's cottage is now a tiny museum of shells."
+  },
+  {
+   "id": "sandcastle",
+   "at": [
+    64,
+    2.6
+   ],
+   "radius": 2.6,
+   "kind": "bubble",
+   "icon": "castle",
+   "title": "Sandcastle",
+   "text": "Four towers, one keep and a moat that the waves keep refilling. Very impressive."
+  }
+ ]
+}
